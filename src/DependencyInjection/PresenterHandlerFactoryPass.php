@@ -13,7 +13,7 @@ class PresenterHandlerFactoryPass implements CompilerPassInterface
 {
     public function process(ContainerBuilder $container): void
     {
-        $converters = [];
+        $handlers = [];
         foreach ($container->findTaggedServiceIds('presenter.handler', true) as $serviceId => $tags) {
             $definition = $container->getDefinition($serviceId);
             $class = $definition->getClass();
@@ -35,12 +35,12 @@ class PresenterHandlerFactoryPass implements CompilerPassInterface
                 throw new \RuntimeException(sprintf('Invalid converter handler: type-hint of argument "$%s" in method "%s::__invoke()" must be a class , "%s" given.', $parameters[0]->getName(), $reflection->getName(), (string) $type));
             }
 
-            $converters[(string) $type] = new Reference($reflection->getName());
+            $handlers[(string) $type] = new Reference($reflection->getName());
         }
 
-        if ($converters) {
+        if ($handlers) {
             $commandDefinition = $container->getDefinition(PresenterHandlerRegistry::class);
-            $commandDefinition->setArgument('$converters', $converters);
+            $commandDefinition->setArgument('$handlers', $handlers);
         }
     }
 }
