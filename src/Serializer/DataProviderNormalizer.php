@@ -51,8 +51,8 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
         $paginationRequest = $context['pagination_request'] ?? null;
         unset($context['pagination_request']);
 
-        $sortRequest = $sortRequest instanceof SortRequestInterface ?: null;
-        $filterRequest = $filterRequest instanceof FilterRequestInterface ?: null;
+        $sortRequest = $sortRequest instanceof SortRequestInterface ? $sortRequest: null;
+        $filterRequest = $filterRequest instanceof FilterRequestInterface ? $filterRequest: null;
 
         $queryBuilder = $this->prepareQueryBuilder($object, $sortRequest, $filterRequest);
 
