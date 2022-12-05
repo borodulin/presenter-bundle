@@ -60,7 +60,9 @@ services:
   Borodulin\PresenterBundle\Presenter\PresenterInterface: '@Borodulin\PresenterBundle\Presenter\Presenter'
 
   Borodulin\PresenterBundle\Serializer\PresenterNormalizer:
-    tags: [ serializer.normalizer, priority: 50 ]
+    tags:
+      - { name: serializer.normalizer, priority: 50 }
 
   Borodulin\PresenterBundle\Serializer\DataProviderNormalizer:
-    tags: [ serializer.normalizer, priority: 100 ]
+    tags:
+      - { name: serializer.normalizer, priority: 100 }
