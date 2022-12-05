@@ -13,7 +13,6 @@ use Borodulin\PresenterBundle\Request\Expand\ExpandRequestInterface;
 use Borodulin\PresenterBundle\Request\Filter\FilterBuilder;
 use Borodulin\PresenterBundle\Request\Filter\FilterRequest;
 use Borodulin\PresenterBundle\Request\Filter\FilterRequestInterface;
-use Borodulin\PresenterBundle\Request\Pagination\PaginationRequestFactory;
 use Borodulin\PresenterBundle\Request\Pagination\PaginationRequestInterface;
 use Borodulin\PresenterBundle\Request\Sort\SortBuilder;
 use Borodulin\PresenterBundle\Request\Sort\SortRequestInterface;
@@ -24,14 +23,6 @@ use Symfony\Component\Serializer\SerializerInterface;
 class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInterface
 {
     private NormalizerInterface $normalizer;
-
-    private PaginationRequestFactory $paginationRequestFactory;
-
-    public function __construct(
-        PaginationRequestFactory $paginationRequestFactory
-    ) {
-        $this->paginationRequestFactory = $paginationRequestFactory;
-    }
 
     public function supportsNormalization($data, string $format = null): bool
     {
@@ -65,9 +56,7 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
 
         $queryBuilder = $this->prepareQueryBuilder($object, $sortRequest, $filterRequest);
 
-        if ($object instanceof PaginatedInterface) {
-            $paginationRequest = $paginationRequest instanceof PaginationRequestInterface
-                ?: $this->paginationRequestFactory->createDefault();
+        if ($object instanceof PaginatedInterface && $paginationRequest instanceof PaginationRequestInterface) {
             $response = $object->paginate(
                 $paginationRequest,
                 $queryBuilder,
