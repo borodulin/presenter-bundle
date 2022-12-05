@@ -1,0 +1,66 @@
+parameters:
+  env(PRESENTER_EXPAND_KEY): 'expand'
+  env(PRESENTER_FILTER_KEY): 'filter'
+  env(PRESENTER_SORT_KEY): 'sort'
+  env(PRESENTER_PAGE_KEY): 'page'
+  env(PRESENTER_PAGE_SIZE_KEY): 'page_size'
+  env(PRESENTER_DEFAULT_PAGE_SIZE): '25'
+  env(PRESENTER_PAGE_START): '0'
+
+  presenter.expand_key: '%env(PRESENTER_EXPAND_KEY)%'
+  presenter.filter_key: '%env(PRESENTER_FILTER_KEY)%'
+  presenter.sort_key: '%env(PRESENTER_SORT_KEY)%'
+  presenter.page_key: '%env(PRESENTER_PAGE_KEY)%'
+  presenter.page_size_key: '%env(PRESENTER_PAGE_SIZE_KEY)%'
+  presenter.default_page_size: '%env(int:PRESENTER_DEFAULT_PAGE_SIZE)%'
+  presenter.page_start: '%env(int:PRESENTER_PAGE_START)%'
+
+services:
+  _defaults:
+    autowire: true
+
+  Borodulin\PresenterBundle\ArgumentResolver\PresenterResolver:
+    tags:
+      - { name: controller.argument_value_resolver, priority: 50 }
+
+  Borodulin\PresenterBundle\ArgumentResolver\RequestArgumentResolver:
+    tags:
+      - { name: controller.argument_value_resolver, priority: 50 }
+
+  Borodulin\PresenterBundle\Request\Expand\ExpandFactory:
+    arguments:
+      $expandKey: '%presenter.expand_key%'
+
+  Borodulin\PresenterBundle\Request\Sort\SortFactory:
+    arguments:
+      $sortKey: '%presenter.sort_key%'
+
+  Borodulin\PresenterBundle\Request\Pagination\PaginationRequestFactory:
+    arguments:
+      $pageKey: '%presenter.page_key%'
+      $pageSizeKey: '%presenter.page_size_key%'
+      $defaultPageSize: '%presenter.default_page_size%'
+      $pageStart: '%presenter.page_start%'
+
+  Borodulin\PresenterBundle\Request\Filter\FilterFactory:
+    arguments:
+      $ignored:
+        - '%presenter.sort_key%'
+        - '%presenter.expand_key%'
+        - '%presenter.page_key%'
+        - '%presenter.page_size_key%'
+
+  Borodulin\PresenterBundle\PresenterHandler\PresenterHandlerRegistry: ~
+  Borodulin\PresenterBundle\DoctrineInteraction\MetadataRegistry: ~
+
+  Borodulin\PresenterBundle\Presenter\Presenter:
+    arguments:
+      $normalizer: '@serializer'
+
+  Borodulin\PresenterBundle\Presenter\PresenterInterface: '@Borodulin\PresenterBundle\Presenter\Presenter'
+
+  Borodulin\PresenterBundle\Serializer\PresenterNormalizer:
+    tags: [ serializer.normalizer, priority: 50 ]
+
+  Borodulin\PresenterBundle\Serializer\DataProviderNormalizer:
+    tags: [ serializer.normalizer, priority: 100 ]
