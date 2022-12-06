@@ -6,5 +6,4 @@ namespace Borodulin\PresenterBundle\Request\Pagination;
 
 interface ResponseFactoryInterface
 {
-
 }

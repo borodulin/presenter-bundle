@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Borodulin\PresenterBundle;
 
+use Borodulin\PresenterBundle\DependencyInjection\PresenterExtension;
+use Borodulin\PresenterBundle\DependencyInjection\PresenterHandlerFactoryPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
-use Borodulin\PresenterBundle\DependencyInjection\PresenterExtension;
-use Borodulin\PresenterBundle\DependencyInjection\PresenterHandlerFactoryPass;
 
 class PresenterBundle extends Bundle
 {

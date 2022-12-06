@@ -26,6 +26,7 @@ class PresenterHandlerRegistry
         if (is_subclass_of($class, Proxy::class)) {
             $class = get_parent_class($class);
         }
+
         return $this->handlers[$class] ?? null;
     }
 
