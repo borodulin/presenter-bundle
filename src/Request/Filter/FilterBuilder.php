@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Borodulin\PresenterBundle\Request\Filter;
 
-use Borodulin\PresenterBundle\DataProvider\CustomFilterInterface;
 use Borodulin\PresenterBundle\DataProvider\QueryBuilder\QueryBuilderFilterInterface;
 
 class FilterBuilder

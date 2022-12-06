@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Borodulin\PresenterBundle\Request\Sort;
 
-use Borodulin\PresenterBundle\DataProvider\CustomSortInterface;
 use Borodulin\PresenterBundle\DataProvider\QueryBuilder\QueryBuilderSortInterface;
 
 class SortBuilder

@@ -4,19 +4,20 @@ declare(strict_types=1);
 
 namespace Borodulin\PresenterBundle\Serializer;
 
-use Borodulin\PresenterBundle\DataProvider\CustomFilterInterface;
-use Borodulin\PresenterBundle\DataProvider\CustomSortInterface;
 use Borodulin\PresenterBundle\DataProvider\DataProviderInterface;
 use Borodulin\PresenterBundle\DataProvider\PaginatedDataProviderInterface;
 use Borodulin\PresenterBundle\DataProvider\QueryBuilder\QueryBuilderInterface;
 use Borodulin\PresenterBundle\PresenterHandler\PresenterHandlerRegistry;
 use Borodulin\PresenterBundle\Request\Expand\ExpandRequestInterface;
+use Borodulin\PresenterBundle\Request\Filter\CustomFilterInterface;
 use Borodulin\PresenterBundle\Request\Filter\FilterBuilder;
 use Borodulin\PresenterBundle\Request\Filter\FilterRequest;
 use Borodulin\PresenterBundle\Request\Filter\FilterRequestInterface;
 use Borodulin\PresenterBundle\Request\Pagination\PaginationBuilder;
 use Borodulin\PresenterBundle\Request\Pagination\PaginationRequestFactory;
 use Borodulin\PresenterBundle\Request\Pagination\PaginationRequestInterface;
+use Borodulin\PresenterBundle\Request\Pagination\PaginationResponseFactoryInterface;
+use Borodulin\PresenterBundle\Request\Sort\CustomSortInterface;
 use Borodulin\PresenterBundle\Request\Sort\SortBuilder;
 use Borodulin\PresenterBundle\Request\Sort\SortRequestInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
@@ -74,28 +75,35 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
                 $paginationRequest : $this->paginationRequestFactory->createDefault();
         }
 
+        $presenterHandler = $this->presenterHandlerRegistry->getPresenterHandlerForClass(\get_class($object));
+
         if ($paginationRequest instanceof PaginationRequestInterface) {
+            if ($presenterHandler instanceof PaginationResponseFactoryInterface) {
+                $responseFactory = $presenterHandler;
+            } elseif ($object instanceof PaginationResponseFactoryInterface) {
+                $responseFactory = $object;
+            } else {
+                $responseFactory = null;
+            }
+
             $response = (new PaginationBuilder())
                 ->paginate(
                     $paginationRequest,
                     $queryBuilder,
-                    fn ($entity) => $this->normalizer->normalize($entity, null, $context)
+                    fn ($entity) => $this->normalizer->normalize($entity, null, $context),
+                    $responseFactory
                 );
-
-            $response = $this->normalizer->normalize($response, null, $context);
         } else {
             $response = array_map(
                 fn ($entity) => $this->normalizer->normalize($entity, null, $context),
                 $queryBuilder->fetchAll()
             );
         }
-
-        $presenterHandler = $this->presenterHandlerRegistry->getPresenterHandlerForClass(\get_class($object));
         if (\is_callable($presenterHandler)) {
-            return \call_user_func($presenterHandler, $object, $response, $context, $queryBuilder);
+            $response = \call_user_func($presenterHandler, $object, $response, $context, $queryBuilder);
         }
 
-        return $response;
+        return $this->normalizer->normalize($response, null, $context);
     }
 
     public function setSerializer(SerializerInterface $serializer): void

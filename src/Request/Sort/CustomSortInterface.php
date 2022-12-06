@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Borodulin\PresenterBundle\DataProvider;
+namespace Borodulin\PresenterBundle\Request\Sort;
 
 interface CustomSortInterface
 {

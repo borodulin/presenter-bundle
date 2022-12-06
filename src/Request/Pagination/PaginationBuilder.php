@@ -11,7 +11,8 @@ class PaginationBuilder
     public function paginate(
         PaginationRequestInterface $paginationRequest,
         QueryBuilderPaginationInterface $queryBuilderPagination,
-        callable $converter = null
+        callable $converter = null,
+        ?PaginationResponseFactoryInterface $responseFactory = null
     ): PaginationResponseInterface {
         $pageSize = $paginationRequest->getPageSize();
         $page = $paginationRequest->getPage();
@@ -32,12 +33,22 @@ class PaginationBuilder
 
         $pageCount = (int) ceil($totalCount / $pageSize);
 
-        return new PaginationResponse(
-            $totalCount,
-            $page,
-            $pageCount,
-            $pageSize,
-            $items
-        );
+        if (null === $responseFactory) {
+            return new PaginationResponse(
+                $totalCount,
+                $page,
+                $pageCount,
+                $pageSize,
+                $items
+            );
+        } else {
+            return $responseFactory->createResponse(
+                $totalCount,
+                $page,
+                $pageCount,
+                $pageSize,
+                $items
+            );
+        }
     }
 }
