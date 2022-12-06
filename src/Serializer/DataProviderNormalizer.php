@@ -90,7 +90,7 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
 
         $presenterHandler = $this->presenterHandlerRegistry->getPresenterHandlerForClass(\get_class($object));
         if (null !== $presenterHandler && \is_callable($presenterHandler)) {
-            return \call_user_func($presenterHandler, $response);
+            return \call_user_func($presenterHandler, $object, $response, $queryBuilder);
         }
 
         return $response;
