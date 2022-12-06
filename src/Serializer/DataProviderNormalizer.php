@@ -9,6 +9,7 @@ use Borodulin\PresenterBundle\DataProvider\CustomSortInterface;
 use Borodulin\PresenterBundle\DataProvider\DataProviderInterface;
 use Borodulin\PresenterBundle\DataProvider\PaginatedDataProviderInterface;
 use Borodulin\PresenterBundle\DataProvider\QueryBuilder\QueryBuilderInterface;
+use Borodulin\PresenterBundle\PresenterHandler\PresenterHandlerRegistry;
 use Borodulin\PresenterBundle\Request\Expand\ExpandRequestInterface;
 use Borodulin\PresenterBundle\Request\Filter\FilterBuilder;
 use Borodulin\PresenterBundle\Request\Filter\FilterRequest;
@@ -26,11 +27,14 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
 {
     private NormalizerInterface $normalizer;
     private PaginationRequestFactory $paginationRequestFactory;
+    private PresenterHandlerRegistry $presenterHandlerRegistry;
 
     public function __construct(
-        PaginationRequestFactory $paginationRequestFactory
+        PaginationRequestFactory $paginationRequestFactory,
+        PresenterHandlerRegistry $presenterHandlerRegistry
     ) {
         $this->paginationRequestFactory = $paginationRequestFactory;
+        $this->presenterHandlerRegistry = $presenterHandlerRegistry;
     }
 
     public function supportsNormalization($data, string $format = null): bool
@@ -78,13 +82,20 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
                     fn ($entity) => $this->normalizer->normalize($entity, null, $context)
                 );
 
-            return $this->normalizer->normalize($response, null, $context);
+            $response = $this->normalizer->normalize($response, null, $context);
         } else {
-            return array_map(
+            $response = array_map(
                 fn ($entity) => $this->normalizer->normalize($entity, null, $context),
                 $queryBuilder->fetchAll()
             );
         }
+
+        $presenterHandler = $this->presenterHandlerRegistry->getPresenterHandlerForClass(\get_class($object));
+        if (\is_callable($presenterHandler)) {
+            return \call_user_func($presenterHandler, $object, $response, $context, $queryBuilder);
+        }
+
+        return $response;
     }
 
     public function setSerializer(SerializerInterface $serializer): void
