@@ -17,7 +17,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 
 class PresenterNormalizer implements NormalizerInterface, SerializerAwareInterface
 {
-    private PresenterHandlerRegistry $entityConverterRegistry;
+    private PresenterHandlerRegistry $presenterHandlerRegistry;
     private PropertyAccessorInterface $propertyAccessor;
     private PropertyListExtractorInterface $propertyListExtractor;
     private MetadataRegistry $metadataRegistry;
@@ -25,13 +25,13 @@ class PresenterNormalizer implements NormalizerInterface, SerializerAwareInterfa
     private NameConverterInterface $nameConverter;
 
     public function __construct(
-        PresenterHandlerRegistry $entityConverterRegistry,
+        PresenterHandlerRegistry $presenterHandlerRegistry,
         PropertyAccessorInterface $propertyAccessor,
         PropertyListExtractorInterface $propertyListExtractor,
         MetadataRegistry $metadataRegistry,
         ?NameConverterInterface $nameConverter = null
     ) {
-        $this->entityConverterRegistry = $entityConverterRegistry;
+        $this->presenterHandlerRegistry = $presenterHandlerRegistry;
         $this->propertyAccessor = $propertyAccessor;
         $this->propertyListExtractor = $propertyListExtractor;
         $this->metadataRegistry = $metadataRegistry;
@@ -57,7 +57,7 @@ class PresenterNormalizer implements NormalizerInterface, SerializerAwareInterfa
         if (\is_object($data)) {
             $class = \get_class($data);
 
-            return null !== $this->entityConverterRegistry->getPresenterHandlerForClass($class)
+            return null !== $this->presenterHandlerRegistry->getPresenterHandlerForClass($class)
                 || null !== $this->metadataRegistry->getMetadataForClass($class);
         }
 
@@ -78,36 +78,36 @@ class PresenterNormalizer implements NormalizerInterface, SerializerAwareInterfa
 
         $class = \get_class($object);
 
-        $converter = $this->entityConverterRegistry->getPresenterHandlerForClass($class);
+        $presenterHandler = $this->presenterHandlerRegistry->getPresenterHandlerForClass($class);
         $metaData = $this->metadataRegistry->getMetadataForClass($class);
 
-        if (null !== $converter && \is_callable($converter)) {
-            $converted = \call_user_func($converter, $object, $context);
+        if (null !== $presenterHandler && \is_callable($presenterHandler)) {
+            $presented = \call_user_func($presenterHandler, $object, $context);
         } elseif (null !== $metaData) {
-            $converted = [];
+            $presented = [];
             foreach ($metaData->getFieldNames() as $fieldName) {
                 if ($this->propertyAccessor->isReadable($object, $fieldName)) {
-                    $converted[$fieldName] = $this->propertyAccessor->getValue($object, $fieldName);
+                    $presented[$fieldName] = $this->propertyAccessor->getValue($object, $fieldName);
                 }
             }
         } else {
-            $converted = $object;
+            $presented = $object;
         }
 
-        if (\is_object($converted)) {
-            if ($class !== \get_class($converted)) {
-                $converted = $this->normalizer->normalize($converted, $format, $context);
+        if (\is_object($presented)) {
+            if ($class !== \get_class($presented)) {
+                $presented = $this->normalizer->normalize($presented, $format, $context);
             }
         }
 
-        if (\is_object($converted)) {
-            foreach ($this->propertyListExtractor->getProperties(\get_class($converted)) as $property) {
-                if ($this->propertyAccessor->isReadable($converted, $property)) {
-                    $data[$property] = $this->propertyAccessor->getValue($converted, $property);
+        if (\is_object($presented)) {
+            foreach ($this->propertyListExtractor->getProperties(\get_class($presented)) as $property) {
+                if ($this->propertyAccessor->isReadable($presented, $property)) {
+                    $data[$property] = $this->propertyAccessor->getValue($presented, $property);
                 }
             }
-        } elseif (\is_array($converted)) {
-            $data = $converted;
+        } elseif (\is_array($presented)) {
+            $data = $presented;
         }
 
         $result = [];
@@ -117,7 +117,7 @@ class PresenterNormalizer implements NormalizerInterface, SerializerAwareInterfa
 
         $class = \get_class($object);
         $metaData = $this->metadataRegistry->getMetadataForClass($class);
-        $customExpandFields = $this->entityConverterRegistry->getCustomExpandFieldsForClass($class);
+        $customExpandFields = $this->presenterHandlerRegistry->getCustomExpandFieldsForClass($class);
 
         $expandable = [];
         if (null !== $customExpandFields) {

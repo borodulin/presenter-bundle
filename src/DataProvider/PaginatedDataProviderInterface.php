@@ -8,11 +8,6 @@ use Borodulin\PresenterBundle\DataProvider\QueryBuilder\QueryBuilderPaginationIn
 use Borodulin\PresenterBundle\Request\Pagination\PaginationRequestInterface;
 use Borodulin\PresenterBundle\Request\Pagination\PaginationResponseInterface;
 
-interface PaginatedInterface extends DataProviderInterface
+interface PaginatedDataProviderInterface extends DataProviderInterface
 {
-    public function paginate(
-        PaginationRequestInterface $request,
-        QueryBuilderPaginationInterface $queryBuilder,
-        callable $presenter
-    ): PaginationResponseInterface;
 }

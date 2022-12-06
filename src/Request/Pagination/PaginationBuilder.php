@@ -6,16 +6,8 @@ namespace Borodulin\PresenterBundle\Request\Pagination;
 
 use Borodulin\PresenterBundle\DataProvider\QueryBuilder\QueryBuilderPaginationInterface;
 
-class Paginator
+class PaginationBuilder
 {
-    private int $pageStart;
-
-    public function __construct(
-        int $pageStart = 0
-    ) {
-        $this->pageStart = $pageStart;
-    }
-
     public function paginate(
         PaginationRequestInterface $paginationRequest,
         QueryBuilderPaginationInterface $queryBuilderPagination,
@@ -23,7 +15,9 @@ class Paginator
     ): PaginationResponseInterface {
         $pageSize = $paginationRequest->getPageSize();
         $page = $paginationRequest->getPage();
-        $offset = ($page - $this->pageStart) * $pageSize;
+        $pageStart = $paginationRequest->getPageStart();
+
+        $offset = ($page - $pageStart) * $pageSize;
         $limit = $pageSize;
 
         $queryBuilderPagination->setLimit($limit);

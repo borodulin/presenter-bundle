@@ -7,12 +7,15 @@ namespace Borodulin\PresenterBundle\Serializer;
 use Borodulin\PresenterBundle\DataProvider\CustomFilterInterface;
 use Borodulin\PresenterBundle\DataProvider\CustomSortInterface;
 use Borodulin\PresenterBundle\DataProvider\DataProviderInterface;
-use Borodulin\PresenterBundle\DataProvider\PaginatedInterface;
+use Borodulin\PresenterBundle\DataProvider\PaginatedDataProviderInterface;
 use Borodulin\PresenterBundle\DataProvider\QueryBuilder\QueryBuilderInterface;
+use Borodulin\PresenterBundle\PresenterHandler\PresenterHandlerRegistry;
 use Borodulin\PresenterBundle\Request\Expand\ExpandRequestInterface;
 use Borodulin\PresenterBundle\Request\Filter\FilterBuilder;
 use Borodulin\PresenterBundle\Request\Filter\FilterRequest;
 use Borodulin\PresenterBundle\Request\Filter\FilterRequestInterface;
+use Borodulin\PresenterBundle\Request\Pagination\PaginationBuilder;
+use Borodulin\PresenterBundle\Request\Pagination\PaginationRequestFactory;
 use Borodulin\PresenterBundle\Request\Pagination\PaginationRequestInterface;
 use Borodulin\PresenterBundle\Request\Sort\SortBuilder;
 use Borodulin\PresenterBundle\Request\Sort\SortRequestInterface;
@@ -23,6 +26,16 @@ use Symfony\Component\Serializer\SerializerInterface;
 class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInterface
 {
     private NormalizerInterface $normalizer;
+    private PaginationRequestFactory $paginationRequestFactory;
+    private PresenterHandlerRegistry $presenterHandlerRegistry;
+
+    public function __construct(
+        PaginationRequestFactory $paginationRequestFactory,
+        PresenterHandlerRegistry $presenterHandlerRegistry
+    ) {
+        $this->paginationRequestFactory = $paginationRequestFactory;
+        $this->presenterHandlerRegistry = $presenterHandlerRegistry;
+    }
 
     public function supportsNormalization($data, string $format = null): bool
     {
@@ -51,25 +64,36 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
         $paginationRequest = $context['pagination_request'] ?? null;
         unset($context['pagination_request']);
 
-        $sortRequest = $sortRequest instanceof SortRequestInterface ? $sortRequest: null;
-        $filterRequest = $filterRequest instanceof FilterRequestInterface ? $filterRequest: null;
+        $sortRequest = $sortRequest instanceof SortRequestInterface ? $sortRequest : null;
+        $filterRequest = $filterRequest instanceof FilterRequestInterface ? $filterRequest : null;
 
         $queryBuilder = $this->prepareQueryBuilder($object, $sortRequest, $filterRequest);
 
-        if ($object instanceof PaginatedInterface && $paginationRequest instanceof PaginationRequestInterface) {
-            $response = $object->paginate(
-                $paginationRequest,
-                $queryBuilder,
-                fn ($entity) => $this->normalizer->normalize($entity, null, $context)
-            );
+        if ($object instanceof PaginatedDataProviderInterface) {
+            $paginationRequest = $paginationRequest instanceof PaginationRequestInterface ?
+                $paginationRequest : $this->paginationRequestFactory->createDefault();
+        }
 
-            return $this->normalizer->normalize($response, null, $context);
+        if ($paginationRequest instanceof PaginationRequestInterface) {
+            $response = (new PaginationBuilder())
+                ->paginate(
+                    $paginationRequest,
+                    $queryBuilder,
+                    fn ($entity) => $this->normalizer->normalize($entity, null, $context)
+                );
         } else {
-            return array_map(
+            $response = array_map(
                 fn ($entity) => $this->normalizer->normalize($entity, null, $context),
                 $queryBuilder->fetchAll()
             );
         }
+
+        $presenterHandler = $this->presenterHandlerRegistry->getPresenterHandlerForClass(\get_class($object));
+        if (null !== $presenterHandler && \is_callable($presenterHandler)) {
+            return \call_user_func($presenterHandler, $response);
+        }
+
+        return $response;
     }
 
     public function setSerializer(SerializerInterface $serializer): void
