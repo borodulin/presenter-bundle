@@ -70,7 +70,7 @@ class PresenterNormalizer implements NormalizerInterface, SerializerAwareInterfa
         array $context = []
     ): array {
         $expandRequest = $context['expand_request'] ?? null;
-        $expand = $expandRequest instanceof ExpandRequestInterface ? $expandRequest->getExpand() : [];
+        $expand = $expandRequest instanceof ExpandRequestInterface ? $expandRequest->getExpand() : ($context['expand'] ?? []) [];
         $nameConverter = $context['name_converter'] ?? null;
         $nameConverter = $nameConverter instanceof NameConverterInterface ?: $this->nameConverter;
 
