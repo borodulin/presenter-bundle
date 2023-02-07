@@ -34,11 +34,11 @@ class SortFactory
         $sortOrders = array_filter(array_map('trim', explode(',', $sortQuery)));
         $result = [];
         foreach ($sortOrders as $sortOrder) {
-            if (preg_match('/^([\w.]+)([+-])?$/', $sortOrder, $matches)) {
-                if (isset($matches[2]) && ('-' === $matches[2])) {
-                    $result[$matches[1]] = 'DESC';
+            if (preg_match('/^([+-])?([\w.]+)$/', $sortOrder, $matches)) {
+                if (isset($matches[1]) && ('-' === $matches[1])) {
+                    $result[$matches[2]] = 'DESC';
                 } else {
-                    $result[$matches[1]] = 'ASC';
+                    $result[$matches[2]] = 'ASC';
                 }
             }
         }
