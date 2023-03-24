@@ -97,7 +97,7 @@ class QueryBuilderProxy implements QueryBuilderInterface
             case Types::SMALLINT:
                 if (\is_array($filterValue)) {
                     $this->queryBuilder->andWhere("$fieldName IN (:$p)")->setParameter($p, $filterValue);
-                } else {
+                } elseif ($filterValue && is_numeric($filterValue)) {
                     $this->queryBuilder->andWhere("$fieldName = :$p")->setParameter($p, $filterValue);
                 }
                 break;
@@ -108,7 +108,7 @@ class QueryBuilderProxy implements QueryBuilderInterface
                     $this->queryBuilder->andWhere("$fieldName IN (:$p)")->setParameter($p, $filterValue);
                 } elseif (\is_string($filterValue) && preg_match('/^%(.+)%$/', $filterValue)) {
                     $this->queryBuilder->andWhere("$fieldName LIKE :$p")->setParameter($p, $filterValue);
-                } else {
+                } elseif ($filterValue) {
                     $this->queryBuilder->andWhere("$fieldName = :$p")->setParameter($p, $filterValue);
                 }
                 break;
