@@ -38,7 +38,7 @@ class QueryBuilderProxy implements QueryBuilderInterface
         ;
         $alias = $qbCount->getRootAliases()[0];
 
-        return (int) $qbCount->select("count($alias)")->getQuery()->getSingleScalarResult();
+        return (int) $qbCount->select("count(distinct $alias)")->getQuery()->getSingleScalarResult();
     }
 
     public function fetchAll(): array
