@@ -34,6 +34,7 @@ class SortFactory
         $sortOrders = array_filter(array_map('trim', explode(',', $sortQuery)));
         $result = [];
         foreach ($sortOrders as $sortOrder) {
+            $sortOrder = strtolower($sortOrder);
             if (preg_match('/^([+-])?([\w.]+)$/', $sortOrder, $matches)) {
                 if (isset($matches[1]) && ('-' === $matches[1])) {
                     $result[$matches[2]] = 'DESC';
