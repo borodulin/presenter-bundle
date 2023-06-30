@@ -6,12 +6,9 @@ namespace Borodulin\PresenterBundle\Request\Expand;
 
 class ExpandRequest implements ExpandRequestInterface
 {
-    private array $expand;
-
     public function __construct(
-        array $expand
+        private readonly array $expand
     ) {
-        $this->expand = $expand;
     }
 
     public function getExpand(): array

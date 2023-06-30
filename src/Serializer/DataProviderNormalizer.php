@@ -27,21 +27,17 @@ use Symfony\Component\Serializer\SerializerInterface;
 class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInterface
 {
     private NormalizerInterface $normalizer;
-    private PaginationRequestFactory $paginationRequestFactory;
-    private PresenterHandlerRegistry $presenterHandlerRegistry;
 
     public function __construct(
-        PaginationRequestFactory $paginationRequestFactory,
-        PresenterHandlerRegistry $presenterHandlerRegistry
+        private readonly PaginationRequestFactory $paginationRequestFactory,
+        private readonly PresenterHandlerRegistry $presenterHandlerRegistry
     ) {
-        $this->paginationRequestFactory = $paginationRequestFactory;
-        $this->presenterHandlerRegistry = $presenterHandlerRegistry;
     }
 
     public function supportsNormalization($data, string $format = null): bool
     {
         if (\is_object($data)) {
-            $class = \get_class($data);
+            $class = $data::class;
             $reflection = new \ReflectionClass($class);
 
             return $reflection->implementsInterface(DataProviderInterface::class);
@@ -75,7 +71,7 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
                 $paginationRequest : $this->paginationRequestFactory->createDefault();
         }
 
-        $presenterHandler = $this->presenterHandlerRegistry->getPresenterHandlerForClass(\get_class($object));
+        $presenterHandler = $this->presenterHandlerRegistry->getPresenterHandlerForClass($object::class);
 
         if ($paginationRequest instanceof PaginationRequestInterface) {
             if ($presenterHandler instanceof PaginationResponseFactoryInterface) {

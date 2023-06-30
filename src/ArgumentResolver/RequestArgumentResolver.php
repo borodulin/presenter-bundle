@@ -15,18 +15,13 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class RequestArgumentResolver implements ArgumentValueResolverInterface
 {
-    private ValidatorInterface $validator;
-    private SerializerInterface $serializer;
-
     /**
      * @param SerializerInterface|Serializer $serializer
      */
     public function __construct(
-        ValidatorInterface $validator,
-        SerializerInterface $serializer
+        private readonly ValidatorInterface $validator,
+        private readonly SerializerInterface $serializer
     ) {
-        $this->validator = $validator;
-        $this->serializer = $serializer;
     }
 
     public function supports(Request $request, ArgumentMetadata $argument): bool

@@ -6,18 +6,11 @@ namespace Borodulin\PresenterBundle\Request\Pagination;
 
 class PaginationRequest implements PaginationRequestInterface
 {
-    private int $page;
-    private int $pageSize;
-    private int $pageStart;
-
     public function __construct(
-        int $page,
-        int $pageSize,
-        int $pageStart
+        private readonly int $page,
+        private readonly int $pageSize,
+        private readonly int $pageStart
     ) {
-        $this->page = $page;
-        $this->pageSize = $pageSize;
-        $this->pageStart = $pageStart;
     }
 
     public function getPage(): int

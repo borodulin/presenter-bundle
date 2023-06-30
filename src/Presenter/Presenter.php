@@ -16,27 +16,15 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
  */
 class Presenter implements PresenterInterface
 {
-    private NormalizerInterface $normalizer;
-    private ?FilterRequestInterface $filterRequest;
-    private ?SortRequestInterface $sortRequest;
-    private ?PaginationRequestInterface $paginationRequest;
-    private ?ExpandRequestInterface $expandRequest;
-    private ?NameConverterInterface $nameConverter;
-
     public function __construct(
-        NormalizerInterface $normalizer,
-        ?FilterRequestInterface $filterRequest,
-        ?SortRequestInterface $sortRequest,
-        ?PaginationRequestInterface $paginationRequest,
-        ?ExpandRequestInterface $expandRequest,
-        NameConverterInterface $nameConverter = null
+        private readonly NormalizerInterface $normalizer,
+        private readonly ?FilterRequestInterface $filterRequest,
+        private readonly ?SortRequestInterface $sortRequest,
+        private readonly ?PaginationRequestInterface $paginationRequest,
+        private readonly ?ExpandRequestInterface $expandRequest,
+        private readonly ?NameConverterInterface $nameConverter = null
     ) {
-        $this->normalizer = $normalizer;
-        $this->filterRequest = $filterRequest;
-        $this->sortRequest = $sortRequest;
-        $this->paginationRequest = $paginationRequest;
-        $this->expandRequest = $expandRequest;
-        $this->nameConverter = $nameConverter;
+
     }
 
     public function show(object $object, array $context = [])

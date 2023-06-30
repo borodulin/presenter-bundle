@@ -12,7 +12,7 @@ class PaginationBuilder
         PaginationRequestInterface $paginationRequest,
         QueryBuilderPaginationInterface $queryBuilderPagination,
         callable $converter = null,
-        ?PaginationResponseFactoryInterface $responseFactory = null
+        PaginationResponseFactoryInterface $responseFactory = null
     ): PaginationResponseInterface {
         $pageSize = $paginationRequest->getPageSize();
         $page = $paginationRequest->getPage();

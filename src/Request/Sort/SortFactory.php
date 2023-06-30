@@ -8,12 +8,9 @@ use Symfony\Component\HttpFoundation\InputBag;
 
 class SortFactory
 {
-    private string $sortKey;
-
     public function __construct(
-        string $sortKey
+        private readonly string $sortKey
     ) {
-        $this->sortKey = $sortKey;
     }
 
     public function tryCreateFromInputBug(InputBag $inputBag): ?SortRequest

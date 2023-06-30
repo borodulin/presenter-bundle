@@ -8,11 +8,9 @@ use Symfony\Component\HttpFoundation\InputBag;
 
 class ExpandFactory
 {
-    private string $expandKey;
-
-    public function __construct(string $expandKey)
-    {
-        $this->expandKey = $expandKey;
+    public function __construct(
+        private readonly string $expandKey
+    ) {
     }
 
     public function tryCreateFromInputBug(InputBag $inputBag): ?ExpandRequest

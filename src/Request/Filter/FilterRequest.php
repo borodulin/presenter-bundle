@@ -6,12 +6,9 @@ namespace Borodulin\PresenterBundle\Request\Filter;
 
 class FilterRequest implements FilterRequestInterface
 {
-    private array $filters;
-
     public function __construct(
-        array $filters
+        private readonly array $filters
     ) {
-        $this->filters = $filters;
     }
 
     public function getFilters(): array

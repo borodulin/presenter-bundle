@@ -6,24 +6,13 @@ namespace Borodulin\PresenterBundle\Request\Pagination;
 
 class PaginationResponse implements PaginationResponseInterface
 {
-    private int $totalCount;
-    private int $page;
-    private int $pageCount;
-    private int $pageSize;
-    private array $items;
-
     public function __construct(
-        int $totalCount,
-        int $page,
-        int $pageCount,
-        int $pageSize,
-        array $items
+        private readonly int $totalCount,
+        private readonly int $page,
+        private readonly int $pageCount,
+        private readonly int $pageSize,
+        private readonly array $items
     ) {
-        $this->totalCount = $totalCount;
-        $this->page = $page;
-        $this->pageCount = $pageCount;
-        $this->pageSize = $pageSize;
-        $this->items = $items;
     }
 
     public function getTotalCount(): int

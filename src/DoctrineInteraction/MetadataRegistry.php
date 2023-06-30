@@ -10,12 +10,9 @@ use Doctrine\Persistence\Mapping\ClassMetadata;
 class MetadataRegistry
 {
     private array $metadata = [];
-    private ManagerRegistry $managerRegistry;
-
     public function __construct(
-        ManagerRegistry $managerRegistry
+        private readonly ManagerRegistry $managerRegistry
     ) {
-        $this->managerRegistry = $managerRegistry;
     }
 
     public function getMetadataForClass(string $class): ?ClassMetadata

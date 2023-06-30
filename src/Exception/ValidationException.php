@@ -8,11 +8,9 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class ValidationException extends HttpException
 {
-    private array $errors;
-
-    public function __construct(array $errors)
-    {
-        $this->errors = $errors;
+    public function __construct(
+        private readonly array $errors
+    ) {
         parent::__construct(422, 'Validation error');
     }
 

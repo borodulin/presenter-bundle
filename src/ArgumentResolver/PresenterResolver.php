@@ -17,24 +17,13 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 class PresenterResolver implements ArgumentValueResolverInterface
 {
-    private NormalizerInterface $normalizer;
-    private SortFactory $sortRequestFactory;
-    private ExpandFactory $expandRequestFactory;
-    private FilterFactory $filterRequestFactory;
-    private PaginationRequestFactory $paginationRequestFactory;
-
     public function __construct(
-        NormalizerInterface $normalizer,
-        SortFactory $sortRequestFactory,
-        ExpandFactory $expandRequestFactory,
-        FilterFactory $filterRequestFactory,
-        PaginationRequestFactory $paginationRequestFactory
+        private readonly NormalizerInterface $normalizer,
+        private readonly SortFactory $sortRequestFactory,
+        private readonly ExpandFactory $expandRequestFactory,
+        private readonly FilterFactory $filterRequestFactory,
+        private readonly PaginationRequestFactory $paginationRequestFactory
     ) {
-        $this->normalizer = $normalizer;
-        $this->sortRequestFactory = $sortRequestFactory;
-        $this->expandRequestFactory = $expandRequestFactory;
-        $this->filterRequestFactory = $filterRequestFactory;
-        $this->paginationRequestFactory = $paginationRequestFactory;
     }
 
     public function supports(Request $request, ArgumentMetadata $argument): bool

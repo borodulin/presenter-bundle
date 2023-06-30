@@ -29,7 +29,7 @@ class PresenterNormalizer implements NormalizerInterface, SerializerAwareInterfa
         PropertyAccessorInterface $propertyAccessor,
         PropertyListExtractorInterface $propertyListExtractor,
         MetadataRegistry $metadataRegistry,
-        ?NameConverterInterface $nameConverter = null
+        NameConverterInterface $nameConverter = null
     ) {
         $this->presenterHandlerRegistry = $presenterHandlerRegistry;
         $this->propertyAccessor = $propertyAccessor;
@@ -55,7 +55,7 @@ class PresenterNormalizer implements NormalizerInterface, SerializerAwareInterfa
     public function supportsNormalization($data, string $format = null): bool
     {
         if (\is_object($data)) {
-            $class = \get_class($data);
+            $class = $data::class;
 
             return null !== $this->presenterHandlerRegistry->getPresenterHandlerForClass($class)
                 || null !== $this->metadataRegistry->getMetadataForClass($class);
@@ -76,7 +76,7 @@ class PresenterNormalizer implements NormalizerInterface, SerializerAwareInterfa
 
         $data = [];
 
-        $class = \get_class($object);
+        $class = $object::class;
 
         $presenterHandler = $this->presenterHandlerRegistry->getPresenterHandlerForClass($class);
         $metaData = $this->metadataRegistry->getMetadataForClass($class);
@@ -95,13 +95,13 @@ class PresenterNormalizer implements NormalizerInterface, SerializerAwareInterfa
         }
 
         if (\is_object($presented)) {
-            if ($class !== \get_class($presented)) {
+            if ($class !== $presented::class) {
                 $presented = $this->normalizer->normalize($presented, $format, $context);
             }
         }
 
         if (\is_object($presented)) {
-            foreach ($this->propertyListExtractor->getProperties(\get_class($presented)) as $property) {
+            foreach ($this->propertyListExtractor->getProperties($presented::class) as $property) {
                 if ($this->propertyAccessor->isReadable($presented, $property)) {
                     $data[$property] = $this->propertyAccessor->getValue($presented, $property);
                 }
@@ -115,7 +115,7 @@ class PresenterNormalizer implements NormalizerInterface, SerializerAwareInterfa
             $result[$nameConverter->normalize($name)] = $value;
         }
 
-        $class = \get_class($object);
+        $class = $object::class;
         $metaData = $this->metadataRegistry->getMetadataForClass($class);
         $customExpandFields = $this->presenterHandlerRegistry->getCustomExpandFieldsForClass($class);
 
@@ -142,7 +142,7 @@ class PresenterNormalizer implements NormalizerInterface, SerializerAwareInterfa
                 $expandTree[$key] = [];
             }
         }
-        $expand = array_filter($expand, fn ($item) => false === strpos($item, '*'));
+        $expand = array_filter($expand, fn ($item) => !str_contains($item, '*'));
         foreach ($expand as $expandItem) {
             $normalizedNames = array_map(
                 fn ($item) => $nameConverter->normalize($item),

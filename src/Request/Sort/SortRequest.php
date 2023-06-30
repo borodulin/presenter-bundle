@@ -6,12 +6,9 @@ namespace Borodulin\PresenterBundle\Request\Sort;
 
 class SortRequest implements SortRequestInterface
 {
-    private array $sortOrders;
-
     public function __construct(
-        array $sortOrders
+        private readonly array $sortOrders
     ) {
-        $this->sortOrders = $sortOrders;
     }
 
     public function getSortOrders(): array

@@ -8,21 +8,12 @@ use Symfony\Component\HttpFoundation\InputBag;
 
 class PaginationRequestFactory
 {
-    private string $pageKey;
-    private string $pageSizeKey;
-    private int $defaultPageSize;
-    private int $pageStart;
-
     public function __construct(
-        string $pageKey,
-        string $pageSizeKey,
-        int $defaultPageSize,
-        int $pageStart
+        private readonly string $pageKey,
+        private readonly string $pageSizeKey,
+        private readonly int $defaultPageSize,
+        private readonly int $pageStart
     ) {
-        $this->pageKey = $pageKey;
-        $this->pageSizeKey = $pageSizeKey;
-        $this->defaultPageSize = $defaultPageSize;
-        $this->pageStart = $pageStart;
     }
 
     public function createFromInputBug(InputBag $inputBag): PaginationRequestInterface

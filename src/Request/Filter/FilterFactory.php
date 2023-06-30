@@ -8,11 +8,9 @@ use Symfony\Component\HttpFoundation\InputBag;
 
 class FilterFactory
 {
-    private array $ignored;
-
-    public function __construct(array $ignored)
-    {
-        $this->ignored = $ignored;
+    public function __construct(
+        private readonly array $ignored
+    ) {
     }
 
     public function tryCreateFromInputBug(InputBag $inputBag): ?FilterRequest
