@@ -13,6 +13,10 @@ class PresenterHandlerFactoryPass implements CompilerPassInterface
 {
     public function process(ContainerBuilder $container): void
     {
+        if (!$container->has(PresenterHandlerRegistry::class)) {
+            return;
+        }
+
         $handlers = [];
         foreach ($container->findTaggedServiceIds('presenter.handler', true) as $serviceId => $tags) {
             $definition = $container->getDefinition($serviceId);

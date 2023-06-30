@@ -27,7 +27,7 @@ class RequestArgumentResolver implements ArgumentValueResolverInterface
     public function supports(Request $request, ArgumentMetadata $argument): bool
     {
         $type = $argument->getType();
-        if (!$type || !class_exists($type)) {
+        if (!($type && class_exists($type))) {
             return false;
         }
 

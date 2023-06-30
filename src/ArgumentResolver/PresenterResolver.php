@@ -30,7 +30,7 @@ class PresenterResolver implements ArgumentValueResolverInterface
     {
         $type = $argument->getType();
 
-        if (!$type || !interface_exists($type)) {
+        if (!($type && interface_exists($type))) {
             return false;
         }
 

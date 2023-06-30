@@ -53,11 +53,12 @@ services:
   Borodulin\PresenterBundle\PresenterHandler\PresenterHandlerRegistry: ~
   Borodulin\PresenterBundle\DoctrineInteraction\MetadataRegistry: ~
 
-  Borodulin\PresenterBundle\Presenter\Presenter:
+  presenter:
+    class: Borodulin\PresenterBundle\Presenter\Presenter
     arguments:
       $normalizer: '@serializer'
 
-  Borodulin\PresenterBundle\Presenter\PresenterInterface: '@Borodulin\PresenterBundle\Presenter\Presenter'
+  Borodulin\PresenterBundle\Presenter\PresenterInterface: '@presenter'
 
   Borodulin\PresenterBundle\Serializer\PresenterNormalizer:
     tags:

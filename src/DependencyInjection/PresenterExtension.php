@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Borodulin\PresenterBundle\DependencyInjection;
 
+use Borodulin\PresenterBundle\Attribute\AsPresenterHandler;
 use Borodulin\PresenterBundle\PresenterHandler\PresenterHandlerInterface;
 use Symfony\Component\Config\FileLocator;
+use Symfony\Component\DependencyInjection\ChildDefinition;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
 use Symfony\Component\HttpKernel\DependencyInjection\ConfigurableExtension;
@@ -19,6 +21,15 @@ class PresenterExtension extends ConfigurableExtension
     {
         $container->registerForAutoconfiguration(PresenterHandlerInterface::class)
             ->addTag('presenter.handler');
+
+        $container->registerAttributeForAutoconfiguration(
+            AsPresenterHandler::class,
+            static function (ChildDefinition $definition, AsPresenterHandler $attribute): void {
+                $tagAttributes = get_object_vars($attribute);
+
+                $definition->addTag('presenter.handler', $tagAttributes);
+            }
+        );
 
         $loader = new YamlFileLoader(
             $container,
