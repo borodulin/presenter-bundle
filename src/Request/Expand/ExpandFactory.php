@@ -27,4 +27,9 @@ class ExpandFactory
 
         return null;
     }
+
+    public function createFromArray(array $expand): ExpandRequest
+    {
+        return new ExpandRequest($expand);
+    }
 }

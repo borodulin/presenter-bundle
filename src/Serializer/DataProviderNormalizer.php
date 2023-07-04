@@ -7,14 +7,12 @@ namespace Borodulin\PresenterBundle\Serializer;
 use Borodulin\PresenterBundle\DataProvider\DataProviderInterface;
 use Borodulin\PresenterBundle\DataProvider\PaginatedDataProviderInterface;
 use Borodulin\PresenterBundle\DataProvider\QueryBuilder\QueryBuilderInterface;
+use Borodulin\PresenterBundle\PresenterContext\DataProviderContextFactory;
 use Borodulin\PresenterBundle\PresenterHandler\PresenterHandlerRegistry;
-use Borodulin\PresenterBundle\Request\Expand\ExpandRequestInterface;
 use Borodulin\PresenterBundle\Request\Filter\CustomFilterInterface;
 use Borodulin\PresenterBundle\Request\Filter\FilterBuilder;
 use Borodulin\PresenterBundle\Request\Filter\FilterRequest;
-use Borodulin\PresenterBundle\Request\Filter\FilterRequestInterface;
 use Borodulin\PresenterBundle\Request\Pagination\PaginationBuilder;
-use Borodulin\PresenterBundle\Request\Pagination\PaginationRequestFactory;
 use Borodulin\PresenterBundle\Request\Pagination\PaginationRequestInterface;
 use Borodulin\PresenterBundle\Request\Pagination\PaginationResponseFactoryInterface;
 use Borodulin\PresenterBundle\Request\Sort\CustomSortInterface;
@@ -29,8 +27,8 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
     private NormalizerInterface $normalizer;
 
     public function __construct(
-        private readonly PaginationRequestFactory $paginationRequestFactory,
-        private readonly PresenterHandlerRegistry $presenterHandlerRegistry
+        private readonly PresenterHandlerRegistry $presenterHandlerRegistry,
+        private readonly DataProviderContextFactory $dataProviderContextFactory,
     ) {
     }
 
@@ -46,32 +44,19 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
         return false;
     }
 
-    /**
-     * @return array|array[]|\ArrayObject|\ArrayObject[]|bool|bool[]|float|float[]|int|int[]|null[]|string|string[]|null
-     */
-    public function normalize($object, string $format = null, array $context = [])
+    public function normalize($object, string $format = null, array $context = []): mixed
     {
-        $expandRequest = $context['expand_request'] ?? null;
-        unset($context['expand_request']);
-        $context['expand'] = $expandRequest instanceof ExpandRequestInterface ? $expandRequest->getExpand() : ($context['expand'] ?? []);
-        $filterRequest = $context['filter_request'] ?? null;
-        unset($context['filter_request']);
-        $sortRequest = $context['sort_request'] ?? null;
-        unset($context['sort_request']);
-        $paginationRequest = $context['pagination_request'] ?? null;
-        unset($context['pagination_request']);
+        $presenterContext = $this->dataProviderContextFactory->createFromArrayContext($context);
 
-        $sortRequest = $sortRequest instanceof SortRequestInterface ? $sortRequest : null;
-        $filterRequest = $filterRequest instanceof FilterRequestInterface ? $filterRequest : null;
-
-        $queryBuilder = $this->prepareQueryBuilder($object, $sortRequest, $filterRequest);
+        $queryBuilder = $this->prepareQueryBuilder($object, $presenterContext->sortRequest, $presenterContext->filterRequest);
 
         if ($object instanceof PaginatedDataProviderInterface) {
-            $paginationRequest = $paginationRequest instanceof PaginationRequestInterface ?
-                $paginationRequest : $this->paginationRequestFactory->createDefault();
+            $paginationRequest = $presenterContext->paginationRequest;
+        } else {
+            $paginationRequest = null;
         }
 
-        $presenterHandler = $this->presenterHandlerRegistry->getPresenterHandlerForClass($object::class);
+        [$presenterHandler, $method] = $this->presenterHandlerRegistry->getPresenterHandlerForClass($object::class, $presenterContext->group);
 
         if ($paginationRequest instanceof PaginationRequestInterface) {
             if ($presenterHandler instanceof PaginationResponseFactoryInterface) {
@@ -95,8 +80,8 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
                 $queryBuilder->fetchAll()
             );
         }
-        if (\is_callable($presenterHandler)) {
-            $response = \call_user_func($presenterHandler, $object, $response, $context, $queryBuilder);
+        if (\is_callable([$presenterHandler, $method])) {
+            $response = \call_user_func([$presenterHandler, $method], $object, $response, $context, $queryBuilder);
         }
 
         return $this->normalizer->normalize($response, null, $context);

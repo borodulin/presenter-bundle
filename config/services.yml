@@ -19,7 +19,7 @@ services:
   _defaults:
     autowire: true
 
-  Borodulin\PresenterBundle\ArgumentResolver\PresenterResolver:
+  Borodulin\PresenterBundle\ArgumentResolver\PresenterContextResolver:
     tags:
       - { name: controller.argument_value_resolver, priority: 50 }
 
@@ -50,15 +50,11 @@ services:
         - '%presenter.page_key%'
         - '%presenter.page_size_key%'
 
+  Borodulin\PresenterBundle\PresenterContext\DataProviderContextFactory: ~
+  Borodulin\PresenterBundle\PresenterContext\ObjectContextFactory: ~
+
   Borodulin\PresenterBundle\PresenterHandler\PresenterHandlerRegistry: ~
   Borodulin\PresenterBundle\DoctrineInteraction\MetadataRegistry: ~
-
-  presenter:
-    class: Borodulin\PresenterBundle\Presenter\Presenter
-    arguments:
-      $normalizer: '@serializer'
-
-  Borodulin\PresenterBundle\Presenter\PresenterInterface: '@presenter'
 
   Borodulin\PresenterBundle\Serializer\PresenterNormalizer:
     tags:

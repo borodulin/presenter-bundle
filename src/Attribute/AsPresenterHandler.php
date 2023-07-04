@@ -10,7 +10,7 @@ class AsPresenterHandler
     public function __construct(
         public ?string $handles = null,
         public ?string $method = null,
-        public ?string $presenter = null,
+        public ?string $group = null,
     ) {
     }
 }

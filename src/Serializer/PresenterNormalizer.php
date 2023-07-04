@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace Borodulin\PresenterBundle\Serializer;
 
 use Borodulin\PresenterBundle\DoctrineInteraction\MetadataRegistry;
+use Borodulin\PresenterBundle\PresenterContext\ObjectContext;
+use Borodulin\PresenterBundle\PresenterContext\ObjectContextFactory;
 use Borodulin\PresenterBundle\PresenterHandler\PresenterHandlerRegistry;
-use Borodulin\PresenterBundle\Request\Expand\ExpandRequestInterface;
 use Doctrine\Common\Collections\Collection;
 use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
 use Symfony\Component\PropertyInfo\PropertyListExtractorInterface;
@@ -17,36 +18,27 @@ use Symfony\Component\Serializer\SerializerInterface;
 
 class PresenterNormalizer implements NormalizerInterface, SerializerAwareInterface
 {
-    private PresenterHandlerRegistry $presenterHandlerRegistry;
-    private PropertyAccessorInterface $propertyAccessor;
-    private PropertyListExtractorInterface $propertyListExtractor;
-    private MetadataRegistry $metadataRegistry;
     private NormalizerInterface $normalizer;
     private NameConverterInterface $nameConverter;
 
     public function __construct(
-        PresenterHandlerRegistry $presenterHandlerRegistry,
-        PropertyAccessorInterface $propertyAccessor,
-        PropertyListExtractorInterface $propertyListExtractor,
-        MetadataRegistry $metadataRegistry,
+        private readonly PresenterHandlerRegistry $presenterHandlerRegistry,
+        private readonly PropertyAccessorInterface $propertyAccessor,
+        private readonly PropertyListExtractorInterface $propertyListExtractor,
+        private readonly MetadataRegistry $metadataRegistry,
+        private readonly ObjectContextFactory $objectContextFactory,
         NameConverterInterface $nameConverter = null
     ) {
-        $this->presenterHandlerRegistry = $presenterHandlerRegistry;
-        $this->propertyAccessor = $propertyAccessor;
-        $this->propertyListExtractor = $propertyListExtractor;
-        $this->metadataRegistry = $metadataRegistry;
         $this->nameConverter = $nameConverter ?? new DummyNameConverter();
     }
 
-    /**
-     * @return array|\ArrayObject
-     */
-    public function normalize($object, string $format = null, array $context = [])
+    public function normalize($object, string $format = null, array $context = []): \ArrayObject|array
     {
+        $objectContext = $this->objectContextFactory->createFromArrayContext($context);
         $result = $this->expand(
             $object,
+            $objectContext,
             $format,
-            $context
         );
 
         return \count($result) ? $result : new \ArrayObject();
@@ -57,7 +49,7 @@ class PresenterNormalizer implements NormalizerInterface, SerializerAwareInterfa
         if (\is_object($data)) {
             $class = $data::class;
 
-            return null !== $this->presenterHandlerRegistry->getPresenterHandlerForClass($class)
+            return null !== $this->presenterHandlerRegistry->hasPresenterHandlerForClass($class)
                 || null !== $this->metadataRegistry->getMetadataForClass($class);
         }
 
@@ -66,23 +58,21 @@ class PresenterNormalizer implements NormalizerInterface, SerializerAwareInterfa
 
     public function expand(
         object $object,
-        string $format = null,
-        array $context = []
+        ObjectContext $context,
+        string $format = null
     ): array {
-        $expandRequest = $context['expand_request'] ?? null;
-        $expand = $expandRequest instanceof ExpandRequestInterface ? $expandRequest->getExpand() : ($context['expand'] ?? []);
-        $nameConverter = $context['name_converter'] ?? null;
-        $nameConverter = $nameConverter instanceof NameConverterInterface ?: $this->nameConverter;
-
         $data = [];
+
+        $nameConverter = $context->nameConverter ?? $this->nameConverter;
+        $expand = $context->expandRequest?->getExpand() ?? [];
 
         $class = $object::class;
 
-        $presenterHandler = $this->presenterHandlerRegistry->getPresenterHandlerForClass($class);
+        [$presenterHandler, $method] = $this->presenterHandlerRegistry->getPresenterHandlerForClass($class, $context->group);
         $metaData = $this->metadataRegistry->getMetadataForClass($class);
 
-        if (null !== $presenterHandler && \is_callable($presenterHandler)) {
-            $presented = \call_user_func($presenterHandler, $object, $context);
+        if (\is_callable([$presenterHandler, $method])) {
+            $presented = \call_user_func([$presenterHandler, $method], $object, $context);
         } elseif (null !== $metaData) {
             $presented = [];
             foreach ($metaData->getFieldNames() as $fieldName) {
@@ -96,7 +86,7 @@ class PresenterNormalizer implements NormalizerInterface, SerializerAwareInterfa
 
         if (\is_object($presented)) {
             if ($class !== $presented::class) {
-                $presented = $this->normalizer->normalize($presented, $format, $context);
+                $presented = $this->normalizer->normalize($presented, $format, $context->toArray());
             }
         }
 
@@ -115,9 +105,8 @@ class PresenterNormalizer implements NormalizerInterface, SerializerAwareInterfa
             $result[$nameConverter->normalize($name)] = $value;
         }
 
-        $class = $object::class;
         $metaData = $this->metadataRegistry->getMetadataForClass($class);
-        $customExpandFields = $this->presenterHandlerRegistry->getCustomExpandFieldsForClass($class);
+        $customExpandFields = $this->presenterHandlerRegistry->getCustomExpandFieldsForClass($class, $context->group);
 
         $expandable = [];
         if (null !== $customExpandFields) {
@@ -176,14 +165,14 @@ class PresenterNormalizer implements NormalizerInterface, SerializerAwareInterfa
                                     $value = $value->toArray();
                                 }
                                 $result[$expandName] = array_map(
-                                    fn ($association) => $this->expand($association, $format, $context),
+                                    fn ($association) => $this->expand($association, $context, $format),
                                     $value
                                 );
                             } else {
-                                $result[$expandName] = $this->expand($value, $format, $context);
+                                $result[$expandName] = $this->expand($value, $context, $format);
                             }
                         } else {
-                            $result[$expandName] = $this->normalizer->normalize($value, $format, $context);
+                            $result[$expandName] = $this->normalizer->normalize($value, $format, $context->toArray());
                         }
                     }
                 } elseif (\is_callable($expandableField)) {
@@ -191,14 +180,14 @@ class PresenterNormalizer implements NormalizerInterface, SerializerAwareInterfa
                     if (\is_object($value)) {
                         if ($value instanceof Collection) {
                             $result[$expandName] = array_map(
-                                fn ($association) => $this->expand($association, $format, $context),
+                                fn ($association) => $this->expand($association, $context, $format),
                                 $value->toArray()
                             );
                         } else {
-                            $result[$expandName] = $this->expand($value, $format, $context);
+                            $result[$expandName] = $this->expand($value, $context, $format);
                         }
                     } else {
-                        $result[$expandName] = $this->normalizer->normalize($value, $format, $context);
+                        $result[$expandName] = $this->normalizer->normalize($value, $format, $context->toArray());
                     }
                 }
             }
