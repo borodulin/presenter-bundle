@@ -14,8 +14,8 @@ class PresenterHandlerRegistry
     public function __construct(
         array $handlers = []
     ) {
-        foreach ($handlers as [$class, $group, $handler]) {
-            $this->handlers[$class][$group] = $handler;
+        foreach ($handlers as [$class, $group, $handler, $method]) {
+            $this->handlers[$class][$group] = [$handler, $method];
         }
     }
 

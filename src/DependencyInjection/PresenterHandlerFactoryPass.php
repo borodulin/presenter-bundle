@@ -69,7 +69,7 @@ class PresenterHandlerFactoryPass implements CompilerPassInterface
                     $handles = (string) $type;
                 }
 
-                $handlers[$handles . ':' . $group] = [$handles, $group, new Reference($reflection->getName())];
+                $handlers[$handles . ':' . $group] = [$handles, $group, new Reference($reflection->getName()), $methodName];
             }
         }
 
