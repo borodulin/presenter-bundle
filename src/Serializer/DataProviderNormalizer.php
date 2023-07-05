@@ -9,6 +9,7 @@ use Borodulin\PresenterBundle\DataProvider\QueryBuilder\QueryBuilderInterface;
 use Borodulin\PresenterBundle\PresenterContext\DataProviderContext;
 use Borodulin\PresenterBundle\PresenterContext\DataProviderContextFactory;
 use Borodulin\PresenterBundle\PresenterContext\PresenterContextAwareInterface;
+use Borodulin\PresenterBundle\PresenterContext\PresenterContextInterface;
 use Borodulin\PresenterBundle\PresenterHandler\PresenterHandlerRegistry;
 use Borodulin\PresenterBundle\Request\Filter\CustomFilterInterface;
 use Borodulin\PresenterBundle\Request\Filter\FilterBuilder;
@@ -50,7 +51,7 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
         $presenterContext = $object instanceof PresenterContextAwareInterface ? $object->getContext()
             : $this->dataProviderContextFactory->createFromArrayContext($context);
 
-        $queryBuilder = $this->prepareQueryBuilder($object, $presenterContext->sortRequest, $presenterContext->filterRequest);
+        $queryBuilder = $this->prepareQueryBuilder($object, $presenterContext?->sortRequest, $presenterContext?->filterRequest);
 
         if ($presenterContext instanceof DataProviderContext) {
             $paginationRequest = $presenterContext->paginationRequest;
@@ -58,7 +59,8 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
             $paginationRequest = null;
         }
 
-        [$presenterHandler, $method] = $this->presenterHandlerRegistry->getPresenterHandlerForClass($object::class, $presenterContext->group);
+        [$presenterHandler, $method] = $this->presenterHandlerRegistry
+            ->getPresenterHandlerForClass($object::class, $presenterContext?->group ?? PresenterContextInterface::DEFAULT_GROUP);
 
         if ($paginationRequest instanceof PaginationRequestInterface) {
             if ($presenterHandler instanceof PaginationResponseFactoryInterface) {
