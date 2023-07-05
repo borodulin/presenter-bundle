@@ -16,7 +16,7 @@ use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Serializer\SerializerAwareInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 
-class PresenterNormalizer implements NormalizerInterface, SerializerAwareInterface
+class ObjectNormalizer implements NormalizerInterface, SerializerAwareInterface
 {
     private NormalizerInterface $normalizer;
     private NameConverterInterface $nameConverter;

@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Borodulin\PresenterBundle\Serializer;
 
 use Borodulin\PresenterBundle\DataProvider\DataProviderInterface;
-use Borodulin\PresenterBundle\DataProvider\PaginatedDataProviderInterface;
 use Borodulin\PresenterBundle\DataProvider\QueryBuilder\QueryBuilderInterface;
+use Borodulin\PresenterBundle\PresenterContext\DataProviderContext;
 use Borodulin\PresenterBundle\PresenterContext\DataProviderContextFactory;
+use Borodulin\PresenterBundle\PresenterContext\PresenterContextAwareInterface;
 use Borodulin\PresenterBundle\PresenterHandler\PresenterHandlerRegistry;
 use Borodulin\PresenterBundle\Request\Filter\CustomFilterInterface;
 use Borodulin\PresenterBundle\Request\Filter\FilterBuilder;
@@ -46,11 +47,12 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
 
     public function normalize($object, string $format = null, array $context = []): mixed
     {
-        $presenterContext = $this->dataProviderContextFactory->createFromArrayContext($context);
+        $presenterContext = $object instanceof PresenterContextAwareInterface ? $object->getContext()
+            : $this->dataProviderContextFactory->createFromArrayContext($context);
 
         $queryBuilder = $this->prepareQueryBuilder($object, $presenterContext->sortRequest, $presenterContext->filterRequest);
 
-        if ($object instanceof PaginatedDataProviderInterface) {
+        if ($presenterContext instanceof DataProviderContext) {
             $paginationRequest = $presenterContext->paginationRequest;
         } else {
             $paginationRequest = null;

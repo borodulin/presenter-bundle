@@ -56,7 +56,7 @@ services:
   Borodulin\PresenterBundle\PresenterHandler\PresenterHandlerRegistry: ~
   Borodulin\PresenterBundle\DoctrineInteraction\MetadataRegistry: ~
 
-  Borodulin\PresenterBundle\Serializer\PresenterNormalizer:
+  Borodulin\PresenterBundle\Serializer\ObjectNormalizer:
     tags:
       - { name: serializer.normalizer, priority: 50 }
 

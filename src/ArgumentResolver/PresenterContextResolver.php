@@ -18,7 +18,7 @@ use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
 class PresenterContextResolver implements ArgumentValueResolverInterface
 {
     public function __construct(
-        private readonly DataProviderContextFactory $presenterContextFactory,
+        private readonly DataProviderContextFactory $dataProviderContextFactory,
     ) {
     }
 
@@ -38,6 +38,6 @@ class PresenterContextResolver implements ArgumentValueResolverInterface
 
     public function resolve(Request $request, ArgumentMetadata $argument): iterable
     {
-        yield $this->presenterContextFactory->createFromInputBug($request->query);
+        yield $this->dataProviderContextFactory->createFromInputBug($request->query);
     }
 }
