@@ -24,7 +24,7 @@ class DataProviderResolver implements ArgumentValueResolverInterface
     {
         $type = $argument->getType();
 
-        if (!($type && interface_exists($type))) {
+        if (!($type && class_exists($type))) {
             return false;
         }
 
@@ -32,8 +32,7 @@ class DataProviderResolver implements ArgumentValueResolverInterface
 
         $reflection = new \ReflectionClass($type);
 
-        return $reflection->isInterface()
-            && $reflection->implementsInterface(DataProviderInterface::class)
+        return $reflection->implementsInterface(DataProviderInterface::class)
             && $this->container->has($controller) && $this->container->get($controller)->has($argument->getName());
     }
 
