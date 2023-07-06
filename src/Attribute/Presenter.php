@@ -9,6 +9,7 @@ class Presenter
 {
     public function __construct(
         public ?string $group = null,
+        public ?string $nameConverter = null,
     ) {
     }
 }
