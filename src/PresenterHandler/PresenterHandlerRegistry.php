@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Borodulin\PresenterBundle\PresenterHandler;
 
-use Borodulin\PresenterBundle\PresenterContext\PresenterContextInterface;
+use Borodulin\PresenterBundle\PresenterContext\ObjectContext;
 use Doctrine\Persistence\Proxy;
 
 class PresenterHandlerRegistry
@@ -31,7 +31,7 @@ class PresenterHandlerRegistry
         $class = $this->getHandledClass($class);
 
         return $this->handlers[$class][$group]
-            ?? $this->handlers[$class][PresenterContextInterface::DEFAULT_GROUP]
+            ?? $this->handlers[$class][ObjectContext::DEFAULT_GROUP]
             ?? [null, null];
     }
 
