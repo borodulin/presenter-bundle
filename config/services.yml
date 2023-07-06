@@ -19,11 +19,8 @@ services:
   _defaults:
     autowire: true
 
-  Borodulin\PresenterBundle\ArgumentResolver\DataProviderResolver:
-    tags:
-      - { name: controller.argument_value_resolver, priority: 50 }
 
-  Borodulin\PresenterBundle\ArgumentResolver\PresenterContextResolver:
+  Borodulin\PresenterBundle\ArgumentResolver\PresenterResolver:
     tags:
       - { name: controller.argument_value_resolver, priority: 50 }
 

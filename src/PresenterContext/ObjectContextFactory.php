@@ -27,17 +27,17 @@ class ObjectContextFactory
 
     public function createFromArrayContext(array $context): ObjectContext
     {
-        $nameConverter = $context[PresenterContextInterface::NAME_CONVERTER] ?? null;
+        $nameConverter = $context[ObjectContext::NAME_CONVERTER] ?? null;
         $nameConverter = $nameConverter instanceof NameConverterInterface ? $nameConverter : null;
-        $expandRequest = $context[PresenterContextInterface::EXPAND_REQUEST] ?? null;
-        if (!$expandRequest instanceof ExpandRequestInterface && isset($context[PresenterContextInterface::EXPAND])) {
-            $expandRequest = $this->expandRequestFactory->createFromArray($context[PresenterContextInterface::EXPAND]);
+        $expandRequest = $context[ObjectContext::EXPAND_REQUEST] ?? null;
+        if (!$expandRequest instanceof ExpandRequestInterface && isset($context[ObjectContext::EXPAND])) {
+            $expandRequest = $this->expandRequestFactory->createFromArray($context[ObjectContext::EXPAND]);
         }
 
         return new ObjectContext(
             expandRequest: $expandRequest instanceof ExpandRequestInterface ? $expandRequest : null,
             nameConverter: $nameConverter instanceof NameConverterInterface ? $nameConverter : null,
-            group: $context[PresenterContextInterface::GROUP] ?? PresenterContextInterface::DEFAULT_GROUP,
+            group: $context[ObjectContext::GROUP] ?? ObjectContext::DEFAULT_GROUP,
         );
     }
 }

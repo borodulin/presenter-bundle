@@ -21,13 +21,13 @@ class PresenterHandlerFactoryPass implements CompilerPassInterface
 
         $handlers = [];
         foreach ($container->findTaggedServiceIds('presenter.handler', true) as $serviceId => $tags) {
+            $className = $this->getServiceClass($container, $serviceId);
+            $reflection = $container->getReflectionClass($className);
+            if (null === $reflection) {
+                throw new RuntimeException(sprintf('Invalid service "%s": class "%s" does not exist.', $serviceId, $className));
+            }
             foreach ($tags as $tag) {
-                $className = $this->getServiceClass($container, $serviceId);
-                $reflection = $container->getReflectionClass($className);
 
-                if (null === $reflection) {
-                    throw new RuntimeException(sprintf('Invalid service "%s": class "%s" does not exist.', $serviceId, $className));
-                }
 
                 $methodName = $tag['method'] ?? '__invoke';
 

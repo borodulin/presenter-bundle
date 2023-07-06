@@ -6,20 +6,18 @@ namespace Borodulin\PresenterBundle\Serializer;
 
 use Borodulin\PresenterBundle\DataProvider\DataProviderInterface;
 use Borodulin\PresenterBundle\DataProvider\QueryBuilder\QueryBuilderInterface;
+use Borodulin\PresenterBundle\Presenter\Presenter;
 use Borodulin\PresenterBundle\PresenterContext\DataProviderContext;
 use Borodulin\PresenterBundle\PresenterContext\DataProviderContextFactory;
-use Borodulin\PresenterBundle\PresenterContext\PresenterContextAwareInterface;
-use Borodulin\PresenterBundle\PresenterContext\PresenterContextInterface;
+use Borodulin\PresenterBundle\PresenterContext\ObjectContext;
+use Borodulin\PresenterBundle\PresenterContext\ObjectContextFactory;
 use Borodulin\PresenterBundle\PresenterHandler\PresenterHandlerRegistry;
 use Borodulin\PresenterBundle\Request\Filter\CustomFilterInterface;
 use Borodulin\PresenterBundle\Request\Filter\FilterBuilder;
-use Borodulin\PresenterBundle\Request\Filter\FilterRequest;
 use Borodulin\PresenterBundle\Request\Pagination\PaginationBuilder;
-use Borodulin\PresenterBundle\Request\Pagination\PaginationRequestInterface;
 use Borodulin\PresenterBundle\Request\Pagination\PaginationResponseFactoryInterface;
 use Borodulin\PresenterBundle\Request\Sort\CustomSortInterface;
 use Borodulin\PresenterBundle\Request\Sort\SortBuilder;
-use Borodulin\PresenterBundle\Request\Sort\SortRequestInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Serializer\SerializerAwareInterface;
 use Symfony\Component\Serializer\SerializerInterface;
@@ -31,16 +29,17 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
     public function __construct(
         private readonly PresenterHandlerRegistry $presenterHandlerRegistry,
         private readonly DataProviderContextFactory $dataProviderContextFactory,
+        private readonly ObjectContextFactory $objectContextFactory,
     ) {
     }
 
     public function supportsNormalization($data, string $format = null): bool
     {
-        if (\is_object($data)) {
-            $class = $data::class;
-            $reflection = new \ReflectionClass($class);
-
-            return $reflection->implementsInterface(DataProviderInterface::class);
+        if ($data instanceof DataProviderInterface) {
+            return true;
+        }
+        if ($data instanceof Presenter) {
+            return $data->getObject() instanceof DataProviderInterface;
         }
 
         return false;
@@ -48,44 +47,45 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
 
     public function normalize($object, string $format = null, array $context = []): mixed
     {
-        $presenterContext = $object instanceof PresenterContextAwareInterface ? $object->getContext()
-            : $this->dataProviderContextFactory->createFromArrayContext($context);
-
-        $queryBuilder = $this->prepareQueryBuilder($object, $presenterContext?->sortRequest, $presenterContext?->filterRequest);
-
-        if ($presenterContext instanceof DataProviderContext) {
-            $paginationRequest = $presenterContext->paginationRequest;
-        } else {
-            $paginationRequest = null;
+        $dataProvider = $object instanceof Presenter ? $object->getObject() : $object;
+        if (!$dataProvider instanceof DataProviderInterface) {
+            throw new \InvalidArgumentException();
         }
 
-        [$presenterHandler, $method] = $this->presenterHandlerRegistry
-            ->getPresenterHandlerForClass($object::class, $presenterContext?->group ?? PresenterContextInterface::DEFAULT_GROUP);
+        $dataProviderContext = $object instanceof Presenter ? $object->dataProviderContext
+            : $this->dataProviderContextFactory->createFromArrayContext($context);
 
-        if ($paginationRequest instanceof PaginationRequestInterface) {
+        $queryBuilder = $this->prepareQueryBuilder($object, $dataProviderContext);
+
+        $objectContext = $object instanceof Presenter ? $object->objectContext : $this->objectContextFactory->createFromArrayContext($context);
+
+        [$presenterHandler, $method] = $this->presenterHandlerRegistry
+            ->getPresenterHandlerForClass($dataProvider::class, $objectContext?->group ?? ObjectContext::DEFAULT_GROUP);
+
+        if ($dataProviderContext->isPaginationEnabled()) {
             if ($presenterHandler instanceof PaginationResponseFactoryInterface) {
                 $responseFactory = $presenterHandler;
-            } elseif ($object instanceof PaginationResponseFactoryInterface) {
-                $responseFactory = $object;
+            } elseif ($dataProvider instanceof PaginationResponseFactoryInterface) {
+                $responseFactory = $dataProvider;
             } else {
                 $responseFactory = null;
             }
 
             $response = (new PaginationBuilder())
                 ->paginate(
-                    $paginationRequest,
+                    $dataProviderContext->paginationRequest,
                     $queryBuilder,
-                    fn ($entity) => $this->normalizer->normalize($entity, null, $context),
+                    fn ($entity) => $this->normalizer->normalize($entity, null, $objectContext->toArray()),
                     $responseFactory
                 );
         } else {
             $response = array_map(
-                fn ($entity) => $this->normalizer->normalize($entity, null, $context),
+                fn ($entity) => $this->normalizer->normalize($entity, null, $objectContext->toArray()),
                 $queryBuilder->fetchAll()
             );
         }
         if (\is_callable([$presenterHandler, $method])) {
-            $response = \call_user_func([$presenterHandler, $method], $object, $response, $context, $queryBuilder);
+            $response = \call_user_func([$presenterHandler, $method], $dataProvider, $response, $context, $queryBuilder);
         }
 
         return $this->normalizer->normalize($response, null, $context);
@@ -98,20 +98,19 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
 
     private function prepareQueryBuilder(
         DataProviderInterface $dataProvider,
-        ?SortRequestInterface $sortRequest,
-        ?FilterRequest $filterRequest
+        DataProviderContext $dataProviderContext,
     ): QueryBuilderInterface {
         $queryBuilder = clone $dataProvider->getQueryBuilder();
-        if (null !== $sortRequest) {
+        if ($dataProviderContext->isSortEnabled() && null !== $dataProviderContext->sortRequest) {
             (new SortBuilder())->sort(
-                $sortRequest,
+                $dataProviderContext->sortRequest,
                 $queryBuilder,
                 $dataProvider instanceof CustomSortInterface ? $dataProvider : null
             );
         }
-        if (null !== $filterRequest) {
+        if ($dataProviderContext->isFilterEnabled() && null !== $dataProviderContext->filterRequest) {
             (new FilterBuilder())->filter(
-                $filterRequest,
+                $dataProviderContext->filterRequest,
                 $queryBuilder,
                 $dataProvider instanceof CustomFilterInterface ? $dataProvider : null
             );

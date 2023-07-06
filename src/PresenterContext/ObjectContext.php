@@ -9,6 +9,12 @@ use Symfony\Component\Serializer\NameConverter\NameConverterInterface;
 
 class ObjectContext implements PresenterContextInterface
 {
+    public const EXPAND_REQUEST = 'expand_request';
+    public const EXPAND = 'expand';
+    public const NAME_CONVERTER = 'name_converter';
+    public const GROUP = 'group';
+    public const DEFAULT_GROUP = 'default';
+
     public function __construct(
         public ?ExpandRequestInterface $expandRequest = null,
         public ?NameConverterInterface $nameConverter = null,
