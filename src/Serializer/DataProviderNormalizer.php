@@ -55,7 +55,7 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
         $dataProviderContext = $object instanceof Presenter ? $object->dataProviderContext
             : $this->dataProviderContextFactory->createFromArrayContext($context);
 
-        $queryBuilder = $this->prepareQueryBuilder($object, $dataProviderContext);
+        $queryBuilder = $this->prepareQueryBuilder($dataProvider, $dataProviderContext);
 
         $objectContext = $object instanceof Presenter ? $object->objectContext : $this->objectContextFactory->createFromArrayContext($context);
 
