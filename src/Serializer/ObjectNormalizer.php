@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Borodulin\PresenterBundle\Serializer;
 
 use Borodulin\PresenterBundle\DoctrineInteraction\MetadataRegistry;
+use Borodulin\PresenterBundle\Presenter\Presenter;
 use Borodulin\PresenterBundle\PresenterContext\ObjectContext;
 use Borodulin\PresenterBundle\PresenterContext\ObjectContextFactory;
 use Borodulin\PresenterBundle\PresenterHandler\PresenterHandlerRegistry;
@@ -34,7 +35,13 @@ class ObjectNormalizer implements NormalizerInterface, SerializerAwareInterface
 
     public function normalize($object, string $format = null, array $context = []): \ArrayObject|array
     {
-        $objectContext = $this->objectContextFactory->createFromArrayContext($context);
+        if ($object instanceof Presenter) {
+            $objectContext = $object->objectContext;
+            $object = $object->getObject();
+        } else {
+            $objectContext = $this->objectContextFactory->createFromArrayContext($context);
+        }
+
         $result = $this->expand(
             $object,
             $objectContext,
