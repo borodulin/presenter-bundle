@@ -6,5 +6,5 @@ namespace Borodulin\PresenterBundle\Presenter;
 
 interface PresenterInterface
 {
-    public function show(object $object, mixed $context): self;
+    public function show(object $object, mixed $context = null): self;
 }

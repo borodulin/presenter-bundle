@@ -21,7 +21,7 @@ class Presenter implements PresenterInterface
     ) {
     }
 
-    public function show(object $object, mixed $context): PresenterInterface
+    public function show(object $object, mixed $context = null): PresenterInterface
     {
         $clone = clone $this;
         $clone->object = $object;
