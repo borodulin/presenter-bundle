@@ -9,6 +9,7 @@ use Borodulin\PresenterBundle\Presenter\Presenter;
 use Borodulin\PresenterBundle\PresenterContext\ObjectContext;
 use Borodulin\PresenterBundle\PresenterContext\ObjectContextFactory;
 use Borodulin\PresenterBundle\PresenterHandler\PresenterHandlerRegistry;
+use Borodulin\PresenterBundle\Request\Expand\ExpandRequest;
 use Doctrine\Common\Collections\Collection;
 use Symfony\Component\PropertyAccess\PropertyAccessorInterface;
 use Symfony\Component\PropertyInfo\PropertyListExtractorInterface;
@@ -37,15 +38,18 @@ class ObjectNormalizer implements NormalizerInterface, SerializerAwareInterface
     {
         if ($object instanceof Presenter) {
             $objectContext = $object->objectContext;
+            $presenterContext = $object->getContext();
             $object = $object->getObject();
         } else {
             $objectContext = $this->objectContextFactory->createFromArrayContext($context);
+            $presenterContext = null;
         }
 
         $result = $this->expand(
             $object,
             $objectContext,
             $format,
+            $presenterContext,
         );
 
         return \count($result) ? $result : new \ArrayObject();
@@ -65,21 +69,23 @@ class ObjectNormalizer implements NormalizerInterface, SerializerAwareInterface
 
     public function expand(
         object $object,
-        ObjectContext $context,
-        string $format = null
+        ObjectContext $objectContext,
+        string $format = null,
+        mixed $presenterContext = null,
     ): array {
         $data = [];
 
-        $nameConverter = $context->nameConverter ?? $this->nameConverter;
-        $expand = $context->expandRequest?->getExpand() ?? [];
-
         $class = $object::class;
+        $nameConverter = $objectContext->nameConverter ?? $this->nameConverter;
+        $group = $objectContext->group;
+        $contextArray = $objectContext->toArray();
+        $expand = $objectContext->expandRequest?->getExpand() ?? [];
 
-        [$presenterHandler, $method] = $this->presenterHandlerRegistry->getPresenterHandlerForClass($class, $context->group);
+        [$presenterHandler, $method] = $this->presenterHandlerRegistry->getPresenterHandlerForClass($class, $group);
         $metaData = $this->metadataRegistry->getMetadataForClass($class);
 
         if (\is_callable([$presenterHandler, $method])) {
-            $presented = \call_user_func([$presenterHandler, $method], $object, $context);
+            $presented = \call_user_func([$presenterHandler, $method], $object, $presenterContext);
         } elseif (null !== $metaData) {
             $presented = [];
             foreach ($metaData->getFieldNames() as $fieldName) {
@@ -93,7 +99,7 @@ class ObjectNormalizer implements NormalizerInterface, SerializerAwareInterface
 
         if (\is_object($presented)) {
             if ($class !== $presented::class) {
-                $presented = $this->normalizer->normalize($presented, $format, $context->toArray());
+                $presented = $this->normalizer->normalize($presented, $format, $contextArray);
             }
         }
 
@@ -113,7 +119,7 @@ class ObjectNormalizer implements NormalizerInterface, SerializerAwareInterface
         }
 
         $metaData = $this->metadataRegistry->getMetadataForClass($class);
-        $customExpandFields = $this->presenterHandlerRegistry->getCustomExpandFieldsForClass($class, $context->group);
+        $customExpandFields = $this->presenterHandlerRegistry->getCustomExpandFieldsForClass($class, $group);
 
         $expandable = [];
         if (null !== $customExpandFields) {
@@ -157,7 +163,8 @@ class ObjectNormalizer implements NormalizerInterface, SerializerAwareInterface
         }
 
         foreach ($expandTree as $expandName => $nestedExpand) {
-            $context['expand'] = array_values($nestedExpand);
+            $expandContext = clone $objectContext;
+            $expandContext->expandRequest = new ExpandRequest(array_values($nestedExpand));
             if (\array_key_exists($expandName, $expandableNormalized)) {
                 $expandableField = $expandableNormalized[$expandName];
                 if (\is_string($expandableField)) {
@@ -172,29 +179,29 @@ class ObjectNormalizer implements NormalizerInterface, SerializerAwareInterface
                                     $value = $value->toArray();
                                 }
                                 $result[$expandName] = array_map(
-                                    fn ($association) => $this->expand($association, $context, $format),
+                                    fn ($association) => $this->expand($association, $expandContext, $format, $presenterContext),
                                     $value
                                 );
                             } else {
-                                $result[$expandName] = $this->expand($value, $context, $format);
+                                $result[$expandName] = $this->expand($value, $expandContext, $format, $presenterContext);
                             }
                         } else {
-                            $result[$expandName] = $this->normalizer->normalize($value, $format, $context->toArray());
+                            $result[$expandName] = $this->normalizer->normalize($value, $format, $expandContext->toArray());
                         }
                     }
                 } elseif (\is_callable($expandableField)) {
-                    $value = \call_user_func($expandableField, $object, $context);
+                    $value = \call_user_func($expandableField, $object, $presenterContext);
                     if (\is_object($value)) {
                         if ($value instanceof Collection) {
                             $result[$expandName] = array_map(
-                                fn ($association) => $this->expand($association, $context, $format),
+                                fn ($association) => $this->expand($association, $expandContext, $format, $presenterContext),
                                 $value->toArray()
                             );
                         } else {
-                            $result[$expandName] = $this->expand($value, $context, $format);
+                            $result[$expandName] = $this->expand($value, $expandContext, $format, $presenterContext);
                         }
                     } else {
-                        $result[$expandName] = $this->normalizer->normalize($value, $format, $context->toArray());
+                        $result[$expandName] = $this->normalizer->normalize($value, $format, $expandContext->toArray());
                     }
                 }
             }

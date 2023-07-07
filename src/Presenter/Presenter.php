@@ -13,6 +13,7 @@ use Borodulin\PresenterBundle\PresenterContext\ObjectContext;
 class Presenter implements PresenterInterface
 {
     private ?object $object = null;
+    private mixed $context = null;
 
     public function __construct(
         public readonly ObjectContext $objectContext,
@@ -20,10 +21,11 @@ class Presenter implements PresenterInterface
     ) {
     }
 
-    public function show(object $object): PresenterInterface
+    public function show(object $object, mixed $context): PresenterInterface
     {
         $clone = clone $this;
         $clone->object = $object;
+        $clone->context = $context;
 
         return $clone;
     }
@@ -31,5 +33,10 @@ class Presenter implements PresenterInterface
     public function getObject(): ?object
     {
         return $this->object;
+    }
+
+    public function getContext(): mixed
+    {
+        return $this->context;
     }
 }

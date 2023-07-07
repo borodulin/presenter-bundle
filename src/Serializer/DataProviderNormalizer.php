@@ -75,12 +75,12 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
                 ->paginate(
                     $dataProviderContext->paginationRequest,
                     $queryBuilder,
-                    fn ($entity) => $this->normalizer->normalize($entity, null, $objectContext->toArray()),
+                    fn ($entity) => $this->normalizer->normalize($entity, $format, $objectContext->toArray()),
                     $responseFactory
                 );
         } else {
             $response = array_map(
-                fn ($entity) => $this->normalizer->normalize($entity, null, $objectContext->toArray()),
+                fn ($entity) => $this->normalizer->normalize($entity, $format, $objectContext->toArray()),
                 $queryBuilder->fetchAll()
             );
         }
@@ -88,7 +88,7 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
             $response = \call_user_func([$presenterHandler, $method], $dataProvider, $response, $context, $queryBuilder);
         }
 
-        return $this->normalizer->normalize($response, null, $context);
+        return $this->normalizer->normalize($response, $format, $context);
     }
 
     public function setSerializer(SerializerInterface $serializer): void
