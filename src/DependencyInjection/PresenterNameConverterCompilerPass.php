@@ -25,9 +25,9 @@ class PresenterNameConverterCompilerPass extends AbstractCompilerPass
             }
             $reflection = $this->getReflectionClass($container, $serviceId, $className);
 
-            foreach ($tags as $tag) {
-                $group = $tag['group'] ?? 'default';
-                if ($reflection->implementsInterface(NameConverterInterface::class)) {
+            if ($reflection->implementsInterface(NameConverterInterface::class)) {
+                foreach ($tags as $tag) {
+                    $group = $tag['group'] ?? 'default';
                     $nameConverters[$group] = new Reference($serviceId);
                 }
             }
