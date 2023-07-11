@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Borodulin\PresenterBundle;
 
 use Borodulin\PresenterBundle\DependencyInjection\PresenterExtension;
-use Borodulin\PresenterBundle\DependencyInjection\PresenterHandlerFactoryPass;
+use Borodulin\PresenterBundle\DependencyInjection\PresenterGroupCompilerPass;
+use Borodulin\PresenterBundle\DependencyInjection\PresenterHandlerCompilerPass;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\ExtensionInterface;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
@@ -16,7 +17,8 @@ class PresenterBundle extends Bundle
     {
         parent::build($container);
 
-        $container->addCompilerPass(new PresenterHandlerFactoryPass());
+        $container->addCompilerPass(new PresenterHandlerCompilerPass());
+        $container->addCompilerPass(new PresenterGroupCompilerPass());
     }
 
     public function getContainerExtension(): ExtensionInterface

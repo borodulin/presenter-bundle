@@ -5,13 +5,10 @@ declare(strict_types=1);
 namespace Borodulin\PresenterBundle\DependencyInjection;
 
 use Borodulin\PresenterBundle\PresenterHandler\PresenterHandlerRegistry;
-use Symfony\Component\DependencyInjection\ChildDefinition;
-use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Exception\RuntimeException;
 use Symfony\Component\DependencyInjection\Reference;
 
-class PresenterHandlerFactoryPass implements CompilerPassInterface
+class PresenterHandlerCompilerPass extends AbstractCompilerPass
 {
     public function process(ContainerBuilder $container): void
     {
@@ -21,16 +18,10 @@ class PresenterHandlerFactoryPass implements CompilerPassInterface
 
         $handlers = [];
         foreach ($container->findTaggedServiceIds('presenter.handler', true) as $serviceId => $tags) {
-            $className = $this->getServiceClass($container, $serviceId);
-            $reflection = $container->getReflectionClass($className);
-            if (null === $reflection) {
-                throw new RuntimeException(sprintf('Invalid service "%s": class "%s" does not exist.', $serviceId, $className));
-            }
+            $reflection = $this->getReflectionClass($container, $serviceId);
+
             foreach ($tags as $tag) {
-
-
                 $methodName = $tag['method'] ?? '__invoke';
-
                 $handles = $tag['handles'] ?? null;
                 $group = $tag['group'] ?? 'default';
 
@@ -76,21 +67,6 @@ class PresenterHandlerFactoryPass implements CompilerPassInterface
         if ($handlers) {
             $commandDefinition = $container->getDefinition(PresenterHandlerRegistry::class);
             $commandDefinition->setArgument('$handlers', $handlers);
-        }
-    }
-
-    private function getServiceClass(ContainerBuilder $container, string $serviceId): string
-    {
-        while (true) {
-            $definition = $container->findDefinition($serviceId);
-
-            if (!$definition->getClass() && $definition instanceof ChildDefinition) {
-                $serviceId = $definition->getParent();
-
-                continue;
-            }
-
-            return $definition->getClass();
         }
     }
 }

@@ -55,6 +55,7 @@ services:
   Borodulin\PresenterBundle\PresenterContext\ObjectContextFactory: ~
 
   Borodulin\PresenterBundle\PresenterHandler\PresenterHandlerRegistry: ~
+  Borodulin\PresenterBundle\NameConverter\NameConverterRegistry: ~
   Borodulin\PresenterBundle\DoctrineInteraction\MetadataRegistry: ~
 
   Borodulin\PresenterBundle\Serializer\ObjectNormalizer:

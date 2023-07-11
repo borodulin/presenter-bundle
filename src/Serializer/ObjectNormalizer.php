@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Borodulin\PresenterBundle\Serializer;
 
 use Borodulin\PresenterBundle\DoctrineInteraction\MetadataRegistry;
+use Borodulin\PresenterBundle\NameConverter\NameConverterRegistry;
 use Borodulin\PresenterBundle\Presenter\Presenter;
 use Borodulin\PresenterBundle\PresenterContext\ObjectContext;
 use Borodulin\PresenterBundle\PresenterContext\ObjectContextFactory;
@@ -25,6 +26,7 @@ class ObjectNormalizer implements NormalizerInterface, SerializerAwareInterface
 
     public function __construct(
         private readonly PresenterHandlerRegistry $presenterHandlerRegistry,
+        private readonly NameConverterRegistry $nameConverterRegistry,
         private readonly PropertyAccessorInterface $propertyAccessor,
         private readonly PropertyListExtractorInterface $propertyListExtractor,
         private readonly MetadataRegistry $metadataRegistry,
@@ -43,6 +45,10 @@ class ObjectNormalizer implements NormalizerInterface, SerializerAwareInterface
         } else {
             $objectContext = $this->objectContextFactory->createFromArrayContext($context);
             $presenterContext = null;
+        }
+
+        if (null === $objectContext->nameConverter) {
+            $objectContext->nameConverter = $this->nameConverterRegistry->getNameConverter($objectContext->group);
         }
 
         $result = $this->expand(

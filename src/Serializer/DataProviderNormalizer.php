@@ -6,6 +6,7 @@ namespace Borodulin\PresenterBundle\Serializer;
 
 use Borodulin\PresenterBundle\DataProvider\DataProviderInterface;
 use Borodulin\PresenterBundle\DataProvider\QueryBuilder\QueryBuilderInterface;
+use Borodulin\PresenterBundle\NameConverter\NameConverterRegistry;
 use Borodulin\PresenterBundle\Presenter\Presenter;
 use Borodulin\PresenterBundle\PresenterContext\DataProviderContext;
 use Borodulin\PresenterBundle\PresenterContext\DataProviderContextFactory;
@@ -28,6 +29,7 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
 
     public function __construct(
         private readonly PresenterHandlerRegistry $presenterHandlerRegistry,
+        private readonly NameConverterRegistry $nameConverterRegistry,
         private readonly DataProviderContextFactory $dataProviderContextFactory,
         private readonly ObjectContextFactory $objectContextFactory,
     ) {
@@ -59,8 +61,12 @@ class DataProviderNormalizer implements NormalizerInterface, SerializerAwareInte
 
         $objectContext = $object instanceof Presenter ? $object->objectContext : $this->objectContextFactory->createFromArrayContext($context);
 
+        if (null === $objectContext->nameConverter) {
+            $objectContext->nameConverter = $this->nameConverterRegistry->getNameConverter($objectContext->group);
+        }
+
         [$presenterHandler, $method] = $this->presenterHandlerRegistry
-            ->getPresenterHandlerForClass($dataProvider::class, $objectContext?->group ?? ObjectContext::DEFAULT_GROUP);
+            ->getPresenterHandlerForClass($dataProvider::class, $objectContext->group);
 
         if ($dataProviderContext->isPaginationEnabled()) {
             if ($presenterHandler instanceof PaginationResponseFactoryInterface) {

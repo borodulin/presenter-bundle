@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Borodulin\PresenterBundle\DependencyInjection;
 
 use Borodulin\PresenterBundle\Attribute\AsPresenterHandler;
+use Borodulin\PresenterBundle\Attribute\Presenter;
 use Borodulin\PresenterBundle\DataProvider\DataProviderInterface;
 use Borodulin\PresenterBundle\PresenterHandler\PresenterHandlerInterface;
 use Symfony\Component\Config\FileLocator;
@@ -32,6 +33,15 @@ class PresenterExtension extends ConfigurableExtension
                 $tagAttributes = get_object_vars($attribute);
 
                 $definition->addTag('presenter.handler', $tagAttributes);
+            }
+        );
+
+        $container->registerAttributeForAutoconfiguration(
+            Presenter::class,
+            static function (ChildDefinition $definition, Presenter $attribute): void {
+                $tagAttributes = get_object_vars($attribute);
+
+                $definition->addTag('presenter.group', $tagAttributes);
             }
         );
 
