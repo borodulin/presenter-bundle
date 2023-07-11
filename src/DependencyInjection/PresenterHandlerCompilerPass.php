@@ -18,7 +18,11 @@ class PresenterHandlerCompilerPass extends AbstractCompilerPass
 
         $handlers = [];
         foreach ($container->findTaggedServiceIds('presenter.handler', true) as $serviceId => $tags) {
-            $reflection = $this->getReflectionClass($container, $serviceId);
+            $className = $this->getServiceClass($container, $serviceId);
+            if (null === $className) {
+                throw new \RuntimeException(sprintf('Invalid service "%s": class is not found.', $serviceId));
+            }
+            $reflection = $this->getReflectionClass($container, $serviceId, $className);
 
             foreach ($tags as $tag) {
                 $methodName = $tag['method'] ?? '__invoke';
