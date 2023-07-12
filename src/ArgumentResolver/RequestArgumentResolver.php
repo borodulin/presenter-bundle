@@ -4,23 +4,23 @@ declare(strict_types=1);
 
 namespace Borodulin\PresenterBundle\ArgumentResolver;
 
+use Borodulin\PresenterBundle\Attribute\Request as RequestAttribute;
 use Borodulin\PresenterBundle\Exception\ValidationException;
+use Borodulin\PresenterBundle\Request\RequestInterface;
+use Symfony\Component\Form\FormFactoryInterface;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Controller\ArgumentValueResolverInterface;
 use Symfony\Component\HttpKernel\ControllerMetadata\ArgumentMetadata;
-use Symfony\Component\Serializer\Serializer;
 use Symfony\Component\Serializer\SerializerInterface;
-use Symfony\Component\Validator\Mapping\ClassMetadata;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class RequestArgumentResolver implements ArgumentValueResolverInterface
 {
-    /**
-     * @param SerializerInterface|Serializer $serializer
-     */
     public function __construct(
         private readonly ValidatorInterface $validator,
-        private readonly SerializerInterface $serializer
+        private readonly SerializerInterface $serializer,
+        private readonly FormFactoryInterface $formFactory,
     ) {
     }
 
@@ -32,14 +32,9 @@ class RequestArgumentResolver implements ArgumentValueResolverInterface
         }
 
         $reflection = new \ReflectionClass($type);
-        if ($this->validator->hasMetadataFor($type)) {
-            $metadata = $this->validator->getMetadataFor($type);
-        } else {
-            $metadata = null;
-        }
 
         return $reflection->implementsInterface(RequestInterface::class)
-            && $metadata instanceof ClassMetadata;
+            || \count($argument->getAttributes(RequestAttribute::class)) > 0;
     }
 
     public function resolve(Request $request, ArgumentMetadata $argument): iterable
@@ -60,23 +55,41 @@ class RequestArgumentResolver implements ArgumentValueResolverInterface
         } else {
             $normalData = $request->query->all();
         }
-        $instance = $this->serializer->denormalize(
-            $normalData,
-            $argument->getType(),
-            'json' === $format ? 'json' : 'csv'
-        );
-        $violations = [];
-        $errors = $this->validator->validate($instance, null, ['Default', $request->getMethod()]);
-        if ($errors->count()) {
-            foreach ($errors as $error) {
-                $this->putErrorAtPropertyPath($violations, $error->getPropertyPath(), $error->getMessage());
-            }
-        }
-        if (\count($violations)) {
-            throw new ValidationException($violations);
-        }
+        $attributes = $argument->getAttributes(RequestAttribute::class);
+        $formClass = $attributes[0]?->formClass ?? null;
+        if (null !== $formClass) {
+            $form = $this->formFactory->create($formClass, null, [
+                'data_class' => $argument->getType(),
+            ]);
 
-        yield $instance;
+            $form->submit($normalData, false);
+
+            if ($form->isSubmitted() && $form->isValid()) {
+                yield $form->getData();
+            } else {
+                $errors = $this->processFormErrors($form);
+
+                throw new ValidationException($errors);
+            }
+        } else {
+            $instance = $this->serializer->denormalize(
+                $normalData,
+                $argument->getType(),
+                'json' === $format ? 'json' : 'csv'
+            );
+            $violations = [];
+            $errors = $this->validator->validate($instance, null, ['Default', $request->getMethod()]);
+            if ($errors->count()) {
+                foreach ($errors as $error) {
+                    $this->putErrorAtPropertyPath($violations, $error->getPropertyPath(), $error->getMessage());
+                }
+            }
+            if (\count($violations)) {
+                throw new ValidationException($violations);
+            }
+
+            yield $instance;
+        }
     }
 
     private function putErrorAtPropertyPath(array &$violations, string $propertyPath, string $errorMessage): void
@@ -102,42 +115,28 @@ class RequestArgumentResolver implements ArgumentValueResolverInterface
         $pointer[] = $errorMessage;
     }
 
-    private function validateProperties(string $class, array $normalData, array $groups): array
+    private function processFormErrors(FormInterface $form): array
     {
-        $violations = [];
-        $metadata = $this->validator->getMetadataFor($class);
-        $reflection = new \ReflectionClass($class);
-        $instance = $reflection->newInstanceWithoutConstructor();
-        if ($metadata instanceof ClassMetadata) {
-            foreach ($metadata->getConstrainedProperties() as $property) {
-                $errors = $this->validator->validatePropertyValue(
-                    $instance,
-                    $property,
-                    $normalData[$property] ?? null,
-                    $groups
-                );
-                if ($errors->count()) {
-                    foreach ($errors as $error) {
-                        $violations[$property][] = $error->getMessage();
-                    }
-                } else {
-                    $propertyReflection = $reflection->getProperty($property);
-                    $propertyType = $propertyReflection->getType();
-                    if (null !== $propertyType) {
-                        $typeName = $propertyType->getName();
-                        if (isset($normalData[$property]) && \is_array($normalData[$property])
-                            && class_exists($typeName) && $this->validator->hasMetadataFor($typeName)
-                        ) {
-                            $propertyViolations = $this->validateProperties($propertyType->getName(), $normalData[$property], $groups);
-                            if (\count($propertyViolations)) {
-                                $violations[$property] = $propertyViolations;
-                            }
-                        }
-                    }
+        $formName = $form->getName();
+        $errors = [];
+
+        foreach ($form->getErrors(true, true) as $formError) {
+            $name = $formError->getOrigin()->getName() === $formName ? [] : [$formError->getOrigin()->getName()];
+            $origin = $formError->getOrigin();
+
+            while ($origin = $origin->getParent()) {
+                if ($formName !== $origin->getName()) {
+                    $name[] = $origin->getName();
                 }
             }
+            $fieldName = empty($name) ? 'global' : implode('_', array_reverse($name));
+
+            if (!isset($errors[$fieldName])) {
+                $errors[$fieldName] = [];
+            }
+            $errors[$fieldName][] = $formError->getMessage();
         }
 
-        return $violations;
+        return $errors;
     }
 }
